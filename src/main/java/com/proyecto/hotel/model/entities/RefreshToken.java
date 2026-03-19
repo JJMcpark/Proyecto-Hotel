@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(name = "refresh_token")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,12 +15,20 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "token", nullable = false)
     private String refreshToken;
 
-    private Boolean isLoggedOut = false;
+    @Column(name = "is_logged_out")
+    private Boolean isLoggedOut;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.isLoggedOut == null) {
+            this.isLoggedOut = false;
+        }
+    }
 }

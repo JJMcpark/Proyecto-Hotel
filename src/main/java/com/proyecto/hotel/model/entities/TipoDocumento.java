@@ -4,20 +4,16 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "detalle_habitacion")
+@Table(name = "tipo_documento")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DetalleHabitacion {
+public class TipoDocumento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_tipo")
-    private Tipo tipo;
-
-    private String descripcion;
+    @Column(nullable = false)
+    private String nombre;
 }

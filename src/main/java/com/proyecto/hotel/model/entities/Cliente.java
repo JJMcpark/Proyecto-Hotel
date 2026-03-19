@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "clientes")
+@Table(name = "cliente")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,10 +15,16 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 150)
     private String nombre;
-    private String telefono;
-    private String correo;
+
+    @Column(name = "num_documento", nullable = false, unique = true, length = 20)
     private String numDocumento;
-    private String idTipoDocumento;
-    private String idHabitacion;
+
+    @Column(length = 20)
+    private String telefono;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_documento", nullable = false)
+    private TipoDocumento tipoDocumento;
 }

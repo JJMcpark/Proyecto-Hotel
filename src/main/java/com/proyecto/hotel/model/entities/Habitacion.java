@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "habitaciones")
+@Table(name = "habitacion")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,17 +15,26 @@ public class Habitacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String piso;
+    @Column(nullable = false)
+    private Integer piso;
+
+    @Column(nullable = false, unique = true, length = 10)
     private String numero;
+
+    @Column(columnDefinition = "TEXT")
+    private String descripcion;
+
+    @Column(length = 20)
     private String estado;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_usuario")
-    private Usuario usuario;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_habitacion")
+    private TipoHabitacion tipoHabitacion;
 
-    private Double tarifa;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_detalle_habitacion")
-    private DetalleHabitacion detalleHabitacion;
+    @PrePersist
+    private void prePersist() {
+        if (this.estado == null) {
+            this.estado = "DISPONIBLE";
+        }
+    }
 }
