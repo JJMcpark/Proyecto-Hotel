@@ -1,5 +1,8 @@
 package com.proyecto.hotel.auth.service;
 
+import com.proyecto.hotel.auth.exception.InvalidRoleException;
+import com.proyecto.hotel.auth.exception.TooManyLoginAttemptsException;
+import com.proyecto.hotel.auth.exception.TokenValidationException;
 import com.proyecto.hotel.auth.jwt.JwtService;
 import com.proyecto.hotel.auth.request.LoginRequest;
 import com.proyecto.hotel.auth.response.AuthResponse;
@@ -9,6 +12,7 @@ import com.proyecto.hotel.model.repository.RefreshTokenRepository;
 import com.proyecto.hotel.model.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,17 +27,37 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
+    private final LoginAttemptService loginAttemptService;
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        // Autenticar con num_documento y password
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getNumDocumento(), request.getPassword())
-        );
+        return loginWithRole(request, null);
+    }
+
+    @Transactional
+    public AuthResponse loginWithRole(LoginRequest request, String requiredRole) {
+        String numDocumento = request.getNumDocumento();
+
+        loginAttemptService.validateLoginAllowed(numDocumento);
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(numDocumento, request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            loginAttemptService.loginFailed(numDocumento);
+            throw e;
+        }
 
         // Obtener usuario autenticado
-        Usuario usuario = usuarioRepository.findByNumDocumento(request.getNumDocumento())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + request.getNumDocumento()));
+        Usuario usuario = usuarioRepository.findByNumDocumento(numDocumento)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + numDocumento));
+
+        if (requiredRole != null && !usuario.getRol().getNombre().equals(requiredRole)) {
+            throw new InvalidRoleException("Acceso denegado para el rol solicitado");
+        }
+
+        loginAttemptService.loginSucceeded(numDocumento);
 
         // Generar tokens
         String accessToken = jwtService.generateAccessToken(usuario);
@@ -42,7 +66,6 @@ public class AuthService {
         // Guardar refresh token en BD
         saveRefreshToken(usuario, refreshToken);
 
-        // Construir respuesta
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -77,7 +100,7 @@ public class AuthService {
         // Validar refresh token
         boolean isValidRefreshToken = jwtService.isRefreshTokenValid(refreshToken, usuario);
         if (!isValidRefreshToken) {
-            throw new RuntimeException("Refresh token inválido o expirado");
+            throw new TokenValidationException("Refresh token inválido o expirado");
         }
 
         // Generar nuevo access token

@@ -1,5 +1,7 @@
 package com.proyecto.hotel.model.entities;
 
+import com.proyecto.hotel.model.enums.EstadoHabitacion;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +26,8 @@ public class Habitacion {
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(length = 20)
-    private String estado;
+    @Enumerated(EnumType.STRING) @Column(length = 20, nullable = false)
+    private EstadoHabitacion estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_tipo_habitacion")
@@ -34,7 +36,7 @@ public class Habitacion {
     @PrePersist
     private void prePersist() {
         if (this.estado == null) {
-            this.estado = "DISPONIBLE";
+            this.estado = EstadoHabitacion.DISPONIBLE;
         }
     }
 }

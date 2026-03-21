@@ -22,4 +22,5 @@ public class AlquilerDTO {
     private HabitacionDTO habitacion;
     private TarifaDTO tarifa;
     private UsuarioDTO usuario;
+    private EmpresaDTO empresa;
 }

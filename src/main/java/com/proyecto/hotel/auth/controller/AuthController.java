@@ -3,6 +3,7 @@ package com.proyecto.hotel.auth.controller;
 import com.proyecto.hotel.auth.request.LoginRequest;
 import com.proyecto.hotel.auth.response.AuthResponse;
 import com.proyecto.hotel.auth.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +17,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.loginWithRole(request, request.getRol());
         return ResponseEntity.ok(response);
     }
 

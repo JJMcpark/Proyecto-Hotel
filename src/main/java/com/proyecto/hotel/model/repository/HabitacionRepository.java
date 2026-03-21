@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
     List<Habitacion> findByEstado(String estado);
+    List<Habitacion> findByTipoHabitacionNombre(String tipo);
 }

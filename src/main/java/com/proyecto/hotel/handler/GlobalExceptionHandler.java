@@ -66,6 +66,45 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler({com.proyecto.hotel.auth.exception.InvalidRoleException.class})
+    public ResponseEntity<ApiError> handleInvalidRoleException(RuntimeException e, HttpServletRequest request) {
+        log.warn("InvalidRoleException: {}", e.getMessage());
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler({com.proyecto.hotel.auth.exception.TooManyLoginAttemptsException.class})
+    public ResponseEntity<ApiError> handleTooManyAttempts(RuntimeException e, HttpServletRequest request) {
+        log.warn("TooManyLoginAttemptsException: {}", e.getMessage());
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                .error("Too Many Requests")
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @ExceptionHandler({com.proyecto.hotel.auth.exception.TokenValidationException.class})
+    public ResponseEntity<ApiError> handleTokenValidation(RuntimeException e, HttpServletRequest request) {
+        log.warn("TokenValidationException: {}", e.getMessage());
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    }
+
     /**
      * Maneja excepciones de validación de argumentos (@Valid)
      */
@@ -93,6 +132,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException e, HttpServletRequest request) {
         log.warn("IllegalArgumentException: {}", e.getMessage());
+        ApiError error = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(e.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequestException(BadRequestException e, HttpServletRequest request) {
+        log.warn("BadRequestException: {}", e.getMessage());
         ApiError error = ApiError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())

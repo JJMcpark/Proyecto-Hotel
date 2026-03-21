@@ -4,6 +4,7 @@ import com.proyecto.hotel.model.dto.CuentaAlquilerDTO;
 import com.proyecto.hotel.model.entities.CuentaAlquiler;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface CuentaAlquilerMapper {
@@ -12,4 +13,6 @@ public interface CuentaAlquilerMapper {
 
     @Mapping(target = "alquiler", ignore = true)
     CuentaAlquiler toEntity(CuentaAlquilerDTO cuentaAlquilerDTO);
+    
+    void updateEntityFromDTO(CuentaAlquilerDTO dto, @MappingTarget CuentaAlquiler entity);
 }

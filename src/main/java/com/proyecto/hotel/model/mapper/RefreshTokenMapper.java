@@ -4,6 +4,7 @@ import com.proyecto.hotel.model.dto.RefreshTokenDTO;
 import com.proyecto.hotel.model.entities.RefreshToken;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface RefreshTokenMapper {
@@ -12,4 +13,6 @@ public interface RefreshTokenMapper {
 
     @Mapping(target = "usuario", ignore = true)
     RefreshToken toEntity(RefreshTokenDTO refreshTokenDTO);
+    
+    void updateEntityFromDTO(RefreshTokenDTO dto, @MappingTarget RefreshToken entity);
 }

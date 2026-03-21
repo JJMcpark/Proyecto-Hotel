@@ -12,4 +12,5 @@ public interface TarifaRepository extends JpaRepository<Tarifa, Long> {
     Optional<Tarifa> findByTipoHabitacionIdAndTipoAlquilerId(Long tipoHabitacionId, Long tipoAlquilerId);
     List<Tarifa> findByTipoHabitacionId(Long tipoHabitacionId);
     List<Tarifa> findByTipoAlquilerId(Long tipoAlquilerId);
+    
 }

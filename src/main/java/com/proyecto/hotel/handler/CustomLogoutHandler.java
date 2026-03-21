@@ -10,10 +10,6 @@ import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- * Manejador personalizado de logout que revoca tokens en la base de datos
- * Implementa LogoutHandler de Spring Security
- */
 @Slf4j
 @RequiredArgsConstructor
 @Component
@@ -21,9 +17,6 @@ public class CustomLogoutHandler implements LogoutHandler {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    /**
-     * Revoca todos los refresh tokens del usuario al hacer logout
-     */
     @Override
     public void logout(HttpServletRequest request, 
                        HttpServletResponse response, 

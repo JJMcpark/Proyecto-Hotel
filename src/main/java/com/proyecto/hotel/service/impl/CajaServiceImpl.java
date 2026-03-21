@@ -1,0 +1,77 @@
+package com.proyecto.hotel.service.impl;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.proyecto.hotel.controller.request.GastoRequestDTO;
+import com.proyecto.hotel.controller.response.MovimientoCajaResponseDTO;
+import com.proyecto.hotel.model.entities.MovimientoCaja;
+import com.proyecto.hotel.model.enums.TipoMovimiento;
+import com.proyecto.hotel.model.repository.UsuarioRepository;
+import com.proyecto.hotel.model.repository.MovimientoCajaRepository;
+import com.proyecto.hotel.service.CajaService;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class CajaServiceImpl implements CajaService {
+
+    private final UsuarioRepository usuarioRepository;
+    private final MovimientoCajaRepository cajaRepository;
+
+    @Transactional
+    public void registrarMovimiento(GastoRequestDTO dto, TipoMovimiento tipo, String dniUsuario) {
+        // 1. El Observador: Quién está operando la caja
+        var usuario = usuarioRepository.findByNumDocumento(dniUsuario)
+                .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Usuario no encontrado: " + dniUsuario));
+
+        // 2. Registro universal de movimiento
+        MovimientoCaja movimiento = new MovimientoCaja();
+        movimiento.setConcepto(dto.concepto());
+        movimiento.setMonto(dto.monto());
+        movimiento.setMetodoPago(dto.metodoPago());
+        movimiento.setTipo(tipo); // INGRESO o EGRESO (Enum)
+        movimiento.setUsuario(usuario);
+        movimiento.setAlquiler(null); // Para gastos generales o compras de stock
+
+        cajaRepository.save(movimiento);
+    }
+
+    public List<MovimientoCajaResponseDTO> listarMovimientosHoy() {
+        LocalDateTime inicio = LocalDate.now().atStartOfDay();
+        LocalDateTime fin = LocalDate.now().atTime(LocalTime.MAX);
+        
+        return cajaRepository.findByFechaBetween(inicio, fin)
+                .stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
+    private MovimientoCajaResponseDTO mapToResponseDTO(MovimientoCaja m) {
+        String habitacion = (m.getAlquiler() != null) 
+            ? m.getAlquiler().getHabitacion().getNumero() 
+            : "N/A";
+            
+        String cliente = (m.getAlquiler() != null) 
+            ? m.getAlquiler().getCliente().getNombre() 
+            : "GENERAL";
+
+        return new MovimientoCajaResponseDTO(
+            m.getId(),
+            m.getTipo().name(),
+            m.getMonto(),
+            m.getMetodoPago().name(),
+            m.getConcepto(),
+            m.getFecha(),
+            m.getUsuario().getNombre(),
+            habitacion,
+            cliente
+        );
+    }
+}

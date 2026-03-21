@@ -43,7 +43,8 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + rol.getNombre()));
+        // Asumimos que rol.nombre ya contiene el prefijo ROLE_ (mejor práctica para storage centralizado)
+        return List.of(new SimpleGrantedAuthority(rol.getNombre()));
     }
 
     @Override

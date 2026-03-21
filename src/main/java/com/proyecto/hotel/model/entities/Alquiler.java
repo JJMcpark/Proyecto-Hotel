@@ -56,6 +56,10 @@ public class Alquiler {
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_empresa")
+    private Empresa empresa;
+
     @PrePersist
     private void prePersist() {
         if (this.estado == null) {

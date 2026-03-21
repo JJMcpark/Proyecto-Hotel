@@ -13,4 +13,6 @@ public class ClienteDTO {
     private String numDocumento;
     private String telefono;
     private TipoDocumentoDTO tipoDocumento;
+    private Long empresaId;
+    private String empresaNombre;
 }

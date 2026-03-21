@@ -43,4 +43,11 @@ public class MovimientoCaja {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_alquiler")
     private Alquiler alquiler;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.fecha == null) {
+            this.fecha = LocalDateTime.now();
+        }
+    }
 }
