@@ -38,7 +38,7 @@ public class CustomLogoutHandler implements LogoutHandler {
                 .orElseThrow(() -> new IllegalArgumentException("Token not found"));
 
         // Marcar el token como logged out (revocado)
-        if (storedToken != null && !storedToken.getIsLoggedOut()) {
+        if (!storedToken.getIsLoggedOut()) {
             storedToken.setIsLoggedOut(true);
             refreshTokenRepository.save(storedToken);
             log.info("Token revoked for user: {}", storedToken.getUsuario().getNumDocumento());

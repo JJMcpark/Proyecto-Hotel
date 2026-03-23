@@ -8,6 +8,7 @@ import com.proyecto.hotel.model.repository.TipoHabitacionRepository;
 import com.proyecto.hotel.service.TipoHabitacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +21,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     private final TipoHabitacionMapper tipoHabitacionMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<TipoHabitacionDTO> obtenerTodosLosTiposHabitacion() {
         return tipoHabitacionRepository.findAll().stream()
                 .map(tipoHabitacionMapper::toDTO)
@@ -27,6 +29,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TipoHabitacionDTO obtenerTipoHabitacionPorId(Long id) {
         TipoHabitacion tipoHabitacion = tipoHabitacionRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Tipo de habitación no encontrado con id: " + id));
@@ -34,6 +37,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     }
 
     @Override
+    @Transactional
     public TipoHabitacionDTO crearTipoHabitacion(TipoHabitacionDTO tipoHabitacionDTO) {
         TipoHabitacion tipoHabitacion = tipoHabitacionMapper.toEntity(tipoHabitacionDTO);
         tipoHabitacion = tipoHabitacionRepository.save(tipoHabitacion);
@@ -41,6 +45,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     }
 
     @Override
+    @Transactional
     public TipoHabitacionDTO actualizarTipoHabitacion(Long id, TipoHabitacionDTO tipoHabitacionDTO) {
         TipoHabitacion tipoHabitacion = tipoHabitacionRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Tipo de habitación no encontrado con id: " + id));
@@ -50,6 +55,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     }
 
     @Override
+    @Transactional
     public void eliminarTipoHabitacion(Long id) {
         tipoHabitacionRepository.deleteById(id);
     }

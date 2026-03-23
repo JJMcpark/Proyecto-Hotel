@@ -5,6 +5,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import com.proyecto.hotel.model.entities.Usuario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,6 +39,9 @@ public class JwtService {
                 .map(Object::toString)
                 .orElse("ROLE_RECEPCIONISTA");
         extraClaims.put("role", role);
+        if (userDetails instanceof Usuario usuario) {
+            extraClaims.put("userId", usuario.getId());
+        }
         return buildToken(extraClaims, userDetails, ACCESS_TOKEN_EXPIRATION);
     }
 
@@ -48,6 +52,9 @@ public class JwtService {
                 .map(Object::toString)
                 .orElse("ROLE_RECEPCIONISTA");
         extraClaims.put("role", role);
+        if (userDetails instanceof Usuario usuario) {
+            extraClaims.put("userId", usuario.getId());
+        }
         return buildToken(extraClaims, userDetails, REFRESH_TOKEN_EXPIRATION);
     }
 
@@ -63,6 +70,23 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> {
+            Object value = claims.get("userId");
+            if (value instanceof Integer i) {
+                return i.longValue();
+            }
+            if (value instanceof Long l) {
+                return l;
+            }
+            return null;
+        });
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -84,18 +108,19 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        return username != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
+        if (username == null) return false;
         boolean isValidToken = refreshTokenRepository.findByRefreshToken(token)
                 .map(t -> !t.getIsLoggedOut())
                 .orElse(false);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token) && isValidToken;
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 

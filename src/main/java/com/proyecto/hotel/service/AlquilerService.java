@@ -9,8 +9,9 @@ import java.util.List;
 public interface AlquilerService {
 
     AlquilerResponseDTO registrarCheckIn(CheckInRequestDTO dto, String dniUsuario);
-    void registrarCheckOut(Long idAlquiler, String dniUsuario, MetodoPago metodoPago);
+    AlquilerResponseDTO registrarCheckOut(Long idAlquiler, String dniUsuario, MetodoPago metodoPago);
     List<AlquilerResponseDTO> listarAlquileresActivos();
+    List<AlquilerResponseDTO> listarHistorial();
     AlquilerResponseDTO obtenerAlquilerPorId(Long id);
 
 }

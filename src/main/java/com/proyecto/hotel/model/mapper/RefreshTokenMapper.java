@@ -14,5 +14,7 @@ public interface RefreshTokenMapper {
     @Mapping(target = "usuario", ignore = true)
     RefreshToken toEntity(RefreshTokenDTO refreshTokenDTO);
     
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "usuario", ignore = true)
     void updateEntityFromDTO(RefreshTokenDTO dto, @MappingTarget RefreshToken entity);
 }

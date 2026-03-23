@@ -19,5 +19,8 @@ public interface UsuarioMapper {
     @Mapping(target = "password", ignore = true)
     Usuario toEntity(UsuarioDTO usuarioDTO);
     
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "tipoDocumento", ignore = true)
+    @Mapping(target = "rol", ignore = true)
     void updateEntityFromDTO(UsuarioDTO dto, @MappingTarget Usuario entity);
 }

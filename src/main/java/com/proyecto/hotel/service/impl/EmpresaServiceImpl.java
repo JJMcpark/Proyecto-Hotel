@@ -9,6 +9,7 @@ import com.proyecto.hotel.model.repository.EmpresaRepository;
 import com.proyecto.hotel.service.EmpresaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     private final EmpresaMapper empresaMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<EmpresaDTO> obtenerTodasLasEmpresas() {
         return empresaRepository.findAll().stream()
                 .map(empresaMapper::toDTO)
@@ -29,6 +31,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EmpresaDTO obtenerEmpresaPorId(Long id) {
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Empresa no encontrada con id: " + id));
@@ -36,6 +39,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public EmpresaDTO crearEmpresa(EmpresaDTO empresaDTO) {
         if (empresaRepository.existsByRuc(empresaDTO.getRuc())) {
             throw new BadRequestException("Ya existe una empresa con el RUC: " + empresaDTO.getRuc());
@@ -45,6 +49,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public EmpresaDTO actualizarEmpresa(Long id, EmpresaDTO empresaDTO) {
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Empresa no encontrada con id: " + id));
@@ -53,6 +58,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public void eliminarEmpresa(Long id) {
         if (!empresaRepository.existsById(id)) {
             throw new BadRequestException("Empresa no encontrada con id: " + id);

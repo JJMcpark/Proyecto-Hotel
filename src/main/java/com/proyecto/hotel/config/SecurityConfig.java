@@ -1,6 +1,8 @@
 package com.proyecto.hotel.config;
 
 import com.proyecto.hotel.auth.jwt.JwtAuthenticationFilter;
+import com.proyecto.hotel.handler.CustomAccessDeniedHandler;
+import com.proyecto.hotel.handler.CustomAuthenticationEntryPoint;
 import com.proyecto.hotel.handler.CustomLogoutHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -23,15 +25,22 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationProvider authenticationProvider;
     private final CustomLogoutHandler customLogoutHandler;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(authRequests -> authRequests
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/recepcion/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA")
                         .anyRequest().authenticated()

@@ -62,6 +62,9 @@ public class Alquiler {
 
     @PrePersist
     private void prePersist() {
+        if (this.fechaIngreso == null) {
+            this.fechaIngreso = LocalDateTime.now();
+        }
         if (this.estado == null) {
             this.estado = EstadoAlquiler.ACTIVO;
         }

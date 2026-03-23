@@ -1,5 +1,6 @@
 package com.proyecto.hotel.service.impl;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.proyecto.hotel.controller.request.GastoRequestDTO;
 import com.proyecto.hotel.controller.response.MovimientoCajaResponseDTO;
+import com.proyecto.hotel.controller.response.ResumenCajaDTO;
 import com.proyecto.hotel.model.entities.MovimientoCaja;
 import com.proyecto.hotel.model.enums.TipoMovimiento;
 import com.proyecto.hotel.model.repository.UsuarioRepository;
@@ -26,7 +28,7 @@ public class CajaServiceImpl implements CajaService {
     private final MovimientoCajaRepository cajaRepository;
 
     @Transactional
-    public void registrarMovimiento(GastoRequestDTO dto, TipoMovimiento tipo, String dniUsuario) {
+    public MovimientoCajaResponseDTO registrarMovimiento(GastoRequestDTO dto, TipoMovimiento tipo, String dniUsuario) {
         // 1. El Observador: Quién está operando la caja
         var usuario = usuarioRepository.findByNumDocumento(dniUsuario)
                 .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Usuario no encontrado: " + dniUsuario));
@@ -40,9 +42,12 @@ public class CajaServiceImpl implements CajaService {
         movimiento.setUsuario(usuario);
         movimiento.setAlquiler(null); // Para gastos generales o compras de stock
 
-        cajaRepository.save(movimiento);
+        var guardado = cajaRepository.save(movimiento);
+        return mapToResponseDTO(guardado);
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public List<MovimientoCajaResponseDTO> listarMovimientosHoy() {
         LocalDateTime inicio = LocalDate.now().atStartOfDay();
         LocalDateTime fin = LocalDate.now().atTime(LocalTime.MAX);
@@ -72,6 +77,40 @@ public class CajaServiceImpl implements CajaService {
             m.getUsuario().getNombre(),
             habitacion,
             cliente
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResumenCajaDTO obtenerResumen(LocalDate desde, LocalDate hasta) {
+        if (hasta.isBefore(desde)) {
+            throw new com.proyecto.hotel.handler.BadRequestException("La fecha 'hasta' no puede ser anterior a la fecha 'desde'");
+        }
+
+        LocalDateTime inicio = desde.atStartOfDay();
+        LocalDateTime fin = hasta.atTime(LocalTime.MAX);
+
+        List<MovimientoCajaResponseDTO> movimientos = cajaRepository.findByFechaBetween(inicio, fin)
+                .stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+
+        BigDecimal totalIngresos = movimientos.stream()
+                .filter(m -> "INGRESO".equals(m.tipo()))
+                .map(MovimientoCajaResponseDTO::monto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalEgresos = movimientos.stream()
+                .filter(m -> "EGRESO".equals(m.tipo()))
+                .map(MovimientoCajaResponseDTO::monto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new ResumenCajaDTO(
+                totalIngresos,
+                totalEgresos,
+                totalIngresos.subtract(totalEgresos),
+                movimientos.size(),
+                movimientos
         );
     }
 }

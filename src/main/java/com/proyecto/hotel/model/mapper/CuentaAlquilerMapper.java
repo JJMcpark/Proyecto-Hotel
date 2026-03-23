@@ -14,5 +14,7 @@ public interface CuentaAlquilerMapper {
     @Mapping(target = "alquiler", ignore = true)
     CuentaAlquiler toEntity(CuentaAlquilerDTO cuentaAlquilerDTO);
     
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "alquiler", ignore = true)
     void updateEntityFromDTO(CuentaAlquilerDTO dto, @MappingTarget CuentaAlquiler entity);
 }

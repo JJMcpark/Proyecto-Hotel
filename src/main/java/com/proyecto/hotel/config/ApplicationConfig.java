@@ -46,6 +46,6 @@ public class ApplicationConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {
-        return new JwtAuthenticationFilter(jwtService, userDetailsService());
+        return new JwtAuthenticationFilter(jwtService, usuarioRepository);
     }
 }

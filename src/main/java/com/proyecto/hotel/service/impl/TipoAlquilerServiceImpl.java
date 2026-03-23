@@ -8,6 +8,7 @@ import com.proyecto.hotel.model.repository.TipoAlquilerRepository;
 import com.proyecto.hotel.service.TipoAlquilerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +21,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     private final TipoAlquilerMapper tipoAlquilerMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<TipoAlquilerDTO> obtenerTodosLosTiposAlquiler() {
         return tipoAlquilerRepository.findAll().stream()
                 .map(tipoAlquilerMapper::toDTO)
@@ -27,6 +29,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TipoAlquilerDTO obtenerTipoAlquilerPorId(Long id) {
         TipoAlquiler tipoAlquiler = tipoAlquilerRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Tipo de alquiler no encontrado con id: " + id));
@@ -34,6 +37,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     }
 
     @Override
+    @Transactional
     public TipoAlquilerDTO crearTipoAlquiler(TipoAlquilerDTO tipoAlquilerDTO) {
         TipoAlquiler tipoAlquiler = tipoAlquilerMapper.toEntity(tipoAlquilerDTO);
         tipoAlquiler = tipoAlquilerRepository.save(tipoAlquiler);
@@ -41,6 +45,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     }
 
     @Override
+    @Transactional
     public TipoAlquilerDTO actualizarTipoAlquiler(Long id, TipoAlquilerDTO tipoAlquilerDTO) {
         TipoAlquiler tipoAlquiler = tipoAlquilerRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Tipo de alquiler no encontrado con id: " + id));
@@ -50,6 +55,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     }
 
     @Override
+    @Transactional
     public void eliminarTipoAlquiler(Long id) {
         tipoAlquilerRepository.deleteById(id);
     }

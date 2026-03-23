@@ -1,7 +1,6 @@
 package com.proyecto.hotel.auth.service;
 
 import com.proyecto.hotel.auth.exception.InvalidRoleException;
-import com.proyecto.hotel.auth.exception.TooManyLoginAttemptsException;
 import com.proyecto.hotel.auth.exception.TokenValidationException;
 import com.proyecto.hotel.auth.jwt.JwtService;
 import com.proyecto.hotel.auth.request.LoginRequest;

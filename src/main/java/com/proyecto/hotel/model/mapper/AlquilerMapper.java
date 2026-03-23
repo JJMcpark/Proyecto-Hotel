@@ -4,6 +4,7 @@ import com.proyecto.hotel.model.dto.AlquilerDTO;
 import com.proyecto.hotel.model.entities.Alquiler;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
@@ -11,5 +12,11 @@ import org.mapstruct.ReportingPolicy;
 public interface AlquilerMapper {
     AlquilerDTO toDTO(Alquiler alquiler);
     Alquiler toEntity(AlquilerDTO alquilerDTO);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "cliente", ignore = true)
+    @Mapping(target = "habitacion", ignore = true)
+    @Mapping(target = "tarifa", ignore = true)
+    @Mapping(target = "usuario", ignore = true)
+    @Mapping(target = "empresa", ignore = true)
     void updateEntityFromDTO(AlquilerDTO dto, @MappingTarget Alquiler entity);
 }

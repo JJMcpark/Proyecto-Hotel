@@ -17,6 +17,8 @@ public interface ClienteMapper {
     @Mapping(target = "empresa", ignore = true)
     Cliente toEntity(ClienteDTO clienteDTO);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "empresa", ignore = true)
+    @Mapping(target = "tipoDocumento", ignore = true)
     void updateEntityFromDTO(ClienteDTO dto, @MappingTarget Cliente entity);
 }

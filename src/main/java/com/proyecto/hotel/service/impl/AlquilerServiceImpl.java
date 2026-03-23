@@ -20,7 +20,10 @@ import com.proyecto.hotel.model.repository.AlquilerRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.proyecto.hotel.model.entities.CuentaAlquiler;
+import com.proyecto.hotel.model.enums.EstadoCuenta;
 import com.proyecto.hotel.model.repository.ClienteRepository;
+import com.proyecto.hotel.model.repository.CuentaAlquilerRepository;
 import com.proyecto.hotel.model.repository.HabitacionRepository;
 import com.proyecto.hotel.model.repository.MovimientoCajaRepository;
 import com.proyecto.hotel.model.repository.TarifaRepository;
@@ -41,6 +44,7 @@ public class AlquilerServiceImpl implements AlquilerService {
     private final ClienteRepository clienteRepository;
     private final MovimientoCajaRepository cajaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CuentaAlquilerRepository cuentaAlquilerRepository;
 
     @Override
     @Transactional
@@ -73,6 +77,7 @@ public class AlquilerServiceImpl implements AlquilerService {
         BigDecimal pendiente = subTotal.subtract(adelanto);
 
         Alquiler alquiler = new Alquiler();
+        alquiler.setFechaIngreso(ahora);
         alquiler.setCliente(cliente);
         alquiler.setHabitacion(habitacion);
         alquiler.setTarifa(tarifa);
@@ -99,7 +104,7 @@ public class AlquilerServiceImpl implements AlquilerService {
 
     @Override
     @Transactional
-    public void registrarCheckOut(Long idAlquiler, String dniUsuario, MetodoPago metodoPago) {
+    public AlquilerResponseDTO registrarCheckOut(Long idAlquiler, String dniUsuario, MetodoPago metodoPago) {
         Alquiler alquiler = alquilerRepository.findById(idAlquiler)
                 .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + idAlquiler));
         Usuario usuario = usuarioRepository.findByNumDocumento(dniUsuario)
@@ -108,6 +113,14 @@ public class AlquilerServiceImpl implements AlquilerService {
         alquiler.setFechaSalida(LocalDateTime.now());
         alquiler.setEstado(EstadoAlquiler.FINALIZADO);
 
+        // Marcar todos los cargos pendientes como PAGADO
+        List<CuentaAlquiler> cuentasPendientes = cuentaAlquilerRepository
+                .findByAlquilerIdAndEstado(idAlquiler, EstadoCuenta.PENDIENTE);
+        for (CuentaAlquiler cuenta : cuentasPendientes) {
+            cuenta.setEstado(EstadoCuenta.PAGADO);
+        }
+        cuentaAlquilerRepository.saveAll(cuentasPendientes);
+
         if (alquiler.getPagoPendiente().compareTo(BigDecimal.ZERO) > 0) {
             registrarMovimientoCaja(alquiler.getPagoPendiente(), metodoPago, alquiler, usuario, "Liquidación Check-out");
             alquiler.setPagoPendiente(BigDecimal.ZERO);
@@ -115,10 +128,12 @@ public class AlquilerServiceImpl implements AlquilerService {
 
         alquiler.getHabitacion().setEstado(EstadoHabitacion.LIMPIEZA);
         habitacionRepository.save(alquiler.getHabitacion());
-        alquilerRepository.save(alquiler);
+        var guardado = alquilerRepository.save(alquiler);
+        return mapearResponse(guardado);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AlquilerResponseDTO> listarAlquileresActivos() {
         return alquilerRepository.findByEstado(EstadoAlquiler.ACTIVO).stream()
                 .map(this::mapearResponse)
@@ -126,8 +141,17 @@ public class AlquilerServiceImpl implements AlquilerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<AlquilerResponseDTO> listarHistorial() {
+        return alquilerRepository.findByEstado(EstadoAlquiler.FINALIZADO).stream()
+                .map(this::mapearResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public AlquilerResponseDTO obtenerAlquilerPorId(Long id) {
-        Alquiler alquiler = alquilerRepository.findById(id)
+        Alquiler alquiler = alquilerRepository.findAlquilerById(id)
                 .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + id));
         return mapearResponse(alquiler);
     }
