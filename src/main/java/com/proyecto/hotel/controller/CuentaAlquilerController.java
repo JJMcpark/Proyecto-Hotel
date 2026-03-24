@@ -48,8 +48,13 @@ public class CuentaAlquilerController {
     }
 
     @DeleteMapping("/{id}")
+<<<<<<< HEAD
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Eliminar cargo", description = "Elimina un cargo de la cuenta. Acción reservada para administrador")
+=======
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Eliminar cargo", description = "Elimina un cargo de la cuenta")
+>>>>>>> f942943 (Actualización 24/03)
     public ResponseEntity<Map<String, String>> eliminarCargo(
             @PathVariable Long alquilerId,
             @PathVariable Long id) {

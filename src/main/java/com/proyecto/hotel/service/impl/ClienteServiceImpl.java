@@ -4,7 +4,14 @@ import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.ClienteDTO;
 import com.proyecto.hotel.model.entities.Cliente;
 import com.proyecto.hotel.model.entities.Empresa;
+<<<<<<< HEAD
 import com.proyecto.hotel.model.mapper.ClienteMapper;
+=======
+import com.proyecto.hotel.model.entities.TipoDocumento;
+import com.proyecto.hotel.model.enums.EstadoAlquiler;
+import com.proyecto.hotel.model.mapper.ClienteMapper;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
+>>>>>>> f942943 (Actualización 24/03)
 import com.proyecto.hotel.model.repository.ClienteRepository;
 import com.proyecto.hotel.model.repository.EmpresaRepository;
 import com.proyecto.hotel.model.repository.TipoDocumentoRepository;
@@ -20,7 +27,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClienteServiceImpl implements ClienteService {
 
+<<<<<<< HEAD
     private final ClienteRepository clienteRepository;
+=======
+    private static final String CLIENTE_PLACEHOLDER_DOC = "ELIMINADO_SYS";
+
+    private final ClienteRepository clienteRepository;
+    private final AlquilerRepository alquilerRepository;
+>>>>>>> f942943 (Actualización 24/03)
     private final EmpresaRepository empresaRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final ClienteMapper clienteMapper;
@@ -29,6 +43,10 @@ public class ClienteServiceImpl implements ClienteService {
     @Transactional(readOnly = true)
     public List<ClienteDTO> obtenerTodosLosClientes() {
         return clienteRepository.findAll().stream()
+<<<<<<< HEAD
+=======
+                .filter(cliente -> !CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento()))
+>>>>>>> f942943 (Actualización 24/03)
                 .map(clienteMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -38,6 +56,12 @@ public class ClienteServiceImpl implements ClienteService {
     public ClienteDTO obtenerClientePorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
+<<<<<<< HEAD
+=======
+        if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
+            throw new BadRequestException("Cliente no encontrado con id: " + id);
+        }
+>>>>>>> f942943 (Actualización 24/03)
         return clienteMapper.toDTO(cliente);
     }
 
@@ -56,6 +80,12 @@ public class ClienteServiceImpl implements ClienteService {
     public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
+<<<<<<< HEAD
+=======
+        if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
+            throw new BadRequestException("Cliente no encontrado con id: " + id);
+        }
+>>>>>>> f942943 (Actualización 24/03)
         clienteMapper.updateEntityFromDTO(clienteDTO, cliente);
         asignarTipoDocumento(cliente, clienteDTO);
         asignarEmpresa(cliente, clienteDTO.getEmpresaId());
@@ -66,9 +96,52 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void eliminarCliente(Long id) {
+<<<<<<< HEAD
         clienteRepository.deleteById(id);
     }
 
+=======
+        Cliente cliente = clienteRepository.findById(id).orElse(null);
+        if (cliente == null || CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
+            throw new BadRequestException("Cliente no encontrado con id: " + id);
+        }
+
+        long activos = alquilerRepository.countByClienteIdAndEstado(id, EstadoAlquiler.ACTIVO);
+        if (activos > 0) {
+            throw new BadRequestException("No se puede eliminar el cliente porque tiene alquileres activos asociados");
+        }
+
+        long historial = alquilerRepository.countByClienteIdAndEstado(id, EstadoAlquiler.FINALIZADO);
+        if (historial > 0) {
+            Cliente placeholder = obtenerOcrearClientePlaceholder();
+            if (placeholder.getId().equals(id)) {
+                throw new BadRequestException("No se puede eliminar el cliente placeholder del sistema");
+            }
+            alquilerRepository.reasignarClientePorEstado(id, placeholder, EstadoAlquiler.FINALIZADO);
+        }
+
+        clienteRepository.deleteById(id);
+    }
+
+    private Cliente obtenerOcrearClientePlaceholder() {
+        return clienteRepository.findByNumDocumento(CLIENTE_PLACEHOLDER_DOC).orElseGet(() -> {
+            TipoDocumento tipoDocumento = tipoDocumentoRepository.findByNombre("DNI")
+                    .orElseGet(() -> tipoDocumentoRepository.findAll().stream().findFirst()
+                            .orElseThrow(() -> new BadRequestException("No hay tipos de documento configurados")));
+
+            Cliente placeholder = Cliente.builder()
+                    .nombre("CLIENTE ELIMINADO")
+                    .numDocumento(CLIENTE_PLACEHOLDER_DOC)
+                    .telefono(null)
+                    .tipoDocumento(tipoDocumento)
+                    .empresa(null)
+                    .build();
+
+            return clienteRepository.save(placeholder);
+        });
+    }
+
+>>>>>>> f942943 (Actualización 24/03)
     private void asignarEmpresa(Cliente cliente, Long empresaId) {
         if (empresaId != null) {
             Empresa empresa = empresaRepository.findById(empresaId)
