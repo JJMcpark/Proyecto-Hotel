@@ -4,14 +4,10 @@ import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.ClienteDTO;
 import com.proyecto.hotel.model.entities.Cliente;
 import com.proyecto.hotel.model.entities.Empresa;
-<<<<<<< HEAD
-import com.proyecto.hotel.model.mapper.ClienteMapper;
-=======
 import com.proyecto.hotel.model.entities.TipoDocumento;
 import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import com.proyecto.hotel.model.mapper.ClienteMapper;
 import com.proyecto.hotel.model.repository.AlquilerRepository;
->>>>>>> f942943 (Actualización 24/03)
 import com.proyecto.hotel.model.repository.ClienteRepository;
 import com.proyecto.hotel.model.repository.EmpresaRepository;
 import com.proyecto.hotel.model.repository.TipoDocumentoRepository;
@@ -27,14 +23,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClienteServiceImpl implements ClienteService {
 
-<<<<<<< HEAD
-    private final ClienteRepository clienteRepository;
-=======
     private static final String CLIENTE_PLACEHOLDER_DOC = "ELIMINADO_SYS";
 
     private final ClienteRepository clienteRepository;
     private final AlquilerRepository alquilerRepository;
->>>>>>> f942943 (Actualización 24/03)
     private final EmpresaRepository empresaRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final ClienteMapper clienteMapper;
@@ -43,10 +35,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Transactional(readOnly = true)
     public List<ClienteDTO> obtenerTodosLosClientes() {
         return clienteRepository.findAll().stream()
-<<<<<<< HEAD
-=======
                 .filter(cliente -> !CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento()))
->>>>>>> f942943 (Actualización 24/03)
                 .map(clienteMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -56,12 +45,9 @@ public class ClienteServiceImpl implements ClienteService {
     public ClienteDTO obtenerClientePorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
-<<<<<<< HEAD
-=======
         if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
             throw new BadRequestException("Cliente no encontrado con id: " + id);
         }
->>>>>>> f942943 (Actualización 24/03)
         return clienteMapper.toDTO(cliente);
     }
 
@@ -80,12 +66,9 @@ public class ClienteServiceImpl implements ClienteService {
     public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
-<<<<<<< HEAD
-=======
         if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
             throw new BadRequestException("Cliente no encontrado con id: " + id);
         }
->>>>>>> f942943 (Actualización 24/03)
         clienteMapper.updateEntityFromDTO(clienteDTO, cliente);
         asignarTipoDocumento(cliente, clienteDTO);
         asignarEmpresa(cliente, clienteDTO.getEmpresaId());
@@ -96,11 +79,6 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void eliminarCliente(Long id) {
-<<<<<<< HEAD
-        clienteRepository.deleteById(id);
-    }
-
-=======
         Cliente cliente = clienteRepository.findById(id).orElse(null);
         if (cliente == null || CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
             throw new BadRequestException("Cliente no encontrado con id: " + id);
@@ -141,7 +119,6 @@ public class ClienteServiceImpl implements ClienteService {
         });
     }
 
->>>>>>> f942943 (Actualización 24/03)
     private void asignarEmpresa(Cliente cliente, Long empresaId) {
         if (empresaId != null) {
             Empresa empresa = empresaRepository.findById(empresaId)
