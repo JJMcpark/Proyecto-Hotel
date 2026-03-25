@@ -63,12 +63,22 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     @Transactional
-    public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO) {
+    public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO, boolean permitirCambioEmpresa) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
         if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
             throw new BadRequestException("Cliente no encontrado con id: " + id);
         }
+
+        Long empresaActualId = cliente.getEmpresa() != null ? cliente.getEmpresa().getId() : null;
+        Long empresaSolicitadaId = clienteDTO.getEmpresaId();
+        boolean empresaCambio = (empresaActualId == null && empresaSolicitadaId != null)
+                || (empresaActualId != null && !empresaActualId.equals(empresaSolicitadaId));
+
+        if (!permitirCambioEmpresa && empresaCambio) {
+            throw new BadRequestException("Solo el administrador puede cambiar la afiliación a empresa de un cliente");
+        }
+
         clienteMapper.updateEntityFromDTO(clienteDTO, cliente);
         asignarTipoDocumento(cliente, clienteDTO);
         asignarEmpresa(cliente, clienteDTO.getEmpresaId());

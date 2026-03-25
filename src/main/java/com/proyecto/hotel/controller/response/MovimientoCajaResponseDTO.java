@@ -12,5 +12,6 @@ public record MovimientoCajaResponseDTO(
     LocalDateTime fecha,
     String nombreUsuario,
     String numeroHabitacion,
-    String nombreCliente
+    String nombreCliente,
+    String nombreEmpresa
 ) {}

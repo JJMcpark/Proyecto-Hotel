@@ -7,6 +7,8 @@ public record AlquilerResponseDTO(
     Long id,
     String numeroHabitacion,
     String nombreCliente,
+    String empresaNombre,
+    BigDecimal totalPagadoCaja,
     BigDecimal subTotal,
     BigDecimal pagoPendiente,
     LocalDateTime fechaIngreso,

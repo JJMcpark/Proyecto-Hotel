@@ -7,6 +7,6 @@ public interface ClienteService {
     List<ClienteDTO> obtenerTodosLosClientes();
     ClienteDTO obtenerClientePorId(Long id);
     ClienteDTO crearCliente(ClienteDTO clienteDTO);
-    ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO);
+    ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO, boolean permitirCambioEmpresa);
     void eliminarCliente(Long id);
 }

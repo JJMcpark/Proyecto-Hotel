@@ -1,6 +1,12 @@
 package com.proyecto.hotel.controller;
 
+import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.CuentaAlquilerDTO;
+import com.proyecto.hotel.model.entities.CuentaAlquiler;
+import com.proyecto.hotel.model.enums.EstadoCuenta;
+import com.proyecto.hotel.model.enums.MetodoPago;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
+import com.proyecto.hotel.model.repository.CuentaAlquilerRepository;
 import com.proyecto.hotel.service.CuentaAlquilerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,8 +14,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +28,8 @@ import java.util.Map;
 public class CuentaAlquilerController {
 
     private final CuentaAlquilerService cuentaAlquilerService;
+    private final AlquilerRepository alquilerRepository;
+    private final CuentaAlquilerRepository cuentaAlquilerRepository;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
@@ -33,18 +43,53 @@ public class CuentaAlquilerController {
     @Operation(summary = "Agregar cargo", description = "Registra un nuevo cargo o consumo en la cuenta del alquiler")
     public ResponseEntity<CuentaAlquilerDTO> agregarCargo(
             @PathVariable Long alquilerId,
-            @Valid @RequestBody CuentaAlquilerDTO dto) {
+            @Valid @RequestBody CuentaAlquilerDTO dto,
+            Authentication authentication) {
+        boolean isRecepcionista = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
+        boolean alquilerEsEmpresa = alquilerRepository.findById(alquilerId)
+            .map(a -> a.getCliente() != null && a.getCliente().getEmpresa() != null)
+            .orElse(false);
+        if (isRecepcionista && alquilerEsEmpresa) {
+            dto.setPrecioUnit(BigDecimal.ZERO);
+        }
         return ResponseEntity.ok(cuentaAlquilerService.agregarCargo(alquilerId, dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @Operation(summary = "Actualizar cargo", description = "Modifica un cargo existente. Acción reservada para administrador")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Actualizar cargo", description = "Modifica un cargo existente. Recepcionista solo puede marcar pagado en clientes no empresa")
     public ResponseEntity<CuentaAlquilerDTO> actualizarCargo(
             @PathVariable Long alquilerId,
             @PathVariable Long id,
-            @Valid @RequestBody CuentaAlquilerDTO dto) {
-        return ResponseEntity.ok(cuentaAlquilerService.actualizarCargo(id, dto));
+            @Valid @RequestBody CuentaAlquilerDTO dto,
+            @RequestParam(required = false) MetodoPago metodoPago,
+            Authentication authentication) {
+        CuentaAlquiler cuentaExistente = cuentaAlquilerRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Cargo no encontrado con id: " + id));
+
+        if (!alquilerId.equals(cuentaExistente.getAlquiler().getId())) {
+            throw new BadRequestException("El cargo no pertenece al alquiler indicado");
+        }
+
+        boolean isRecepcionista = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
+
+        if (isRecepcionista) {
+            boolean alquilerEsEmpresa = alquilerRepository.findById(alquilerId)
+                    .map(a -> a.getCliente() != null && a.getCliente().getEmpresa() != null)
+                    .orElse(false);
+            if (alquilerEsEmpresa) {
+                throw new BadRequestException("No autorizado para marcar como pagado en clientes empresa");
+            }
+
+            dto.setDescripcion(cuentaExistente.getDescripcion());
+            dto.setPrecioUnit(cuentaExistente.getPrecioUnit());
+            dto.setCantidad(cuentaExistente.getCantidad());
+            dto.setEstado(EstadoCuenta.PAGADO.name());
+        }
+
+        return ResponseEntity.ok(cuentaAlquilerService.actualizarCargo(id, dto, authentication.getName(), metodoPago));
     }
 
     @DeleteMapping("/{id}")

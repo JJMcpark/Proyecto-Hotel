@@ -51,6 +51,15 @@ public class CajaController {
         return ResponseEntity.ok(cajaService.listarMovimientosHoy());
     }
 
+    @GetMapping("/movimientos-rango")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Movimientos por rango", description = "Lista movimientos de caja en un rango de fechas")
+    public ResponseEntity<List<MovimientoCajaResponseDTO>> obtenerMovimientosPorRango(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(cajaService.listarMovimientosPorRango(desde, hasta));
+    }
+
     @GetMapping("/resumen")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Resumen de caja por rango de fechas", description = "Reporte con movimientos, totales y balance. Acción reservada para administrador")

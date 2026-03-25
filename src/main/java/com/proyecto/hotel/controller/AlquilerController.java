@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.proyecto.hotel.controller.request.ActualizarMontosAlquilerRequestDTO;
 import com.proyecto.hotel.controller.request.CheckInRequestDTO;
 import com.proyecto.hotel.controller.response.AlquilerResponseDTO;
 import com.proyecto.hotel.model.enums.MetodoPago;
@@ -61,5 +62,14 @@ public class AlquilerController {
     @Operation(summary = "Obtener alquiler por id", description = "Consulta el detalle de un alquiler específico")
     public ResponseEntity<AlquilerResponseDTO> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(alquilerService.obtenerAlquilerPorId(id));
+    }
+
+    @PatchMapping("/{id}/montos")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Actualizar montos de alquiler", description = "Permite ajustar subtotal y pendiente. Acción reservada para administrador")
+    public ResponseEntity<AlquilerResponseDTO> actualizarMontos(
+            @PathVariable Long id,
+            @Valid @RequestBody ActualizarMontosAlquilerRequestDTO dto) {
+        return ResponseEntity.ok(alquilerService.actualizarMontos(id, dto.subTotal(), dto.pagoPendiente()));
     }
 }

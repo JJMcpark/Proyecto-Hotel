@@ -1,6 +1,7 @@
 package com.proyecto.hotel.controller;
 
 import com.proyecto.hotel.model.dto.TarifaDTO;
+import com.proyecto.hotel.controller.request.IncrementoTarifaRequestDTO;
 import com.proyecto.hotel.service.TarifaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,6 +53,13 @@ public class TarifaController {
     public ResponseEntity<TarifaDTO> actualizarTarifa(@PathVariable Long id, @Valid @RequestBody TarifaDTO tarifaDTO, Authentication auth) {
         TarifaDTO tarifa = tarifaService.actualizarTarifa(id, tarifaDTO);
         return ResponseEntity.ok(tarifa);
+    }
+
+    @PatchMapping("/incremento-porcentaje")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Incrementar tarifas por porcentaje", description = "Aumenta todas las tarifas según porcentaje. Acción reservada para administrador")
+    public ResponseEntity<List<TarifaDTO>> incrementarTarifas(@Valid @RequestBody IncrementoTarifaRequestDTO dto) {
+        return ResponseEntity.ok(tarifaService.incrementarTarifasPorcentaje(dto.porcentaje()));
     }
 
     @DeleteMapping("/{id}")

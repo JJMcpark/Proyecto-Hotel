@@ -156,6 +156,27 @@ public class AlquilerServiceImpl implements AlquilerService {
         return mapearResponse(alquiler);
     }
 
+    @Override
+    @Transactional
+    public AlquilerResponseDTO actualizarMontos(Long id, BigDecimal subTotal, BigDecimal pagoPendiente) {
+        Alquiler alquiler = alquilerRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + id));
+
+        if (subTotal.compareTo(BigDecimal.ZERO) < 0 || pagoPendiente.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Los montos no pueden ser negativos");
+        }
+
+        if (alquiler.getCantTiempo() == null || alquiler.getCantTiempo() <= 0) {
+            throw new BadRequestException("No se puede recalcular tarifa: cantidad de tiempo inválida");
+        }
+
+        BigDecimal precioFijado = subTotal.divide(BigDecimal.valueOf(alquiler.getCantTiempo()), 2, java.math.RoundingMode.HALF_UP);
+        alquiler.setPrecioFijado(precioFijado);
+        alquiler.setPagoPendiente(pagoPendiente);
+
+        return mapearResponse(alquilerRepository.save(alquiler));
+    }
+
     private void registrarMovimientoCaja(BigDecimal monto, MetodoPago metodo, Alquiler alq, Usuario usu, String concepto) {
         MovimientoCaja mov = new MovimientoCaja();
         mov.setTipo(TipoMovimiento.INGRESO);
@@ -169,6 +190,10 @@ public class AlquilerServiceImpl implements AlquilerService {
 
     private AlquilerResponseDTO mapearResponse(Alquiler a) {
     BigDecimal subTotal = a.getPrecioFijado().multiply(BigDecimal.valueOf(a.getCantTiempo()));
+    BigDecimal totalPagadoCaja = cajaRepository.sumIngresosByAlquilerId(a.getId());
+    String empresaNombre = (a.getCliente() != null && a.getCliente().getEmpresa() != null)
+        ? a.getCliente().getEmpresa().getNombre()
+        : (a.getEmpresa() != null ? a.getEmpresa().getNombre() : "—");
     
     // Si la fecha de ingreso es null (porque aún no se refrescó de la DB), usamos la actual
     LocalDateTime fechaInicio = (a.getFechaIngreso() != null) ? a.getFechaIngreso() : LocalDateTime.now();
@@ -177,6 +202,8 @@ public class AlquilerServiceImpl implements AlquilerService {
         a.getId(),
         a.getHabitacion().getNumero(),
         a.getCliente().getNombre(),
+        empresaNombre,
+        totalPagadoCaja,
         subTotal,
         a.getPagoPendiente(),
         fechaInicio,

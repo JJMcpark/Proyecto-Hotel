@@ -58,6 +58,22 @@ public class CajaServiceImpl implements CajaService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MovimientoCajaResponseDTO> listarMovimientosPorRango(LocalDate desde, LocalDate hasta) {
+        if (hasta.isBefore(desde)) {
+            throw new com.proyecto.hotel.handler.BadRequestException("La fecha 'hasta' no puede ser anterior a la fecha 'desde'");
+        }
+
+        LocalDateTime inicio = desde.atStartOfDay();
+        LocalDateTime fin = hasta.atTime(LocalTime.MAX);
+
+        return cajaRepository.findByFechaBetween(inicio, fin)
+                .stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
     private MovimientoCajaResponseDTO mapToResponseDTO(MovimientoCaja m) {
         String habitacion = (m.getAlquiler() != null) 
             ? m.getAlquiler().getHabitacion().getNumero() 
@@ -66,6 +82,12 @@ public class CajaServiceImpl implements CajaService {
         String cliente = (m.getAlquiler() != null) 
             ? m.getAlquiler().getCliente().getNombre() 
             : "GENERAL";
+
+        String empresa = (m.getAlquiler() != null
+                && m.getAlquiler().getCliente() != null
+                && m.getAlquiler().getCliente().getEmpresa() != null)
+            ? m.getAlquiler().getCliente().getEmpresa().getNombre()
+            : "—";
 
         return new MovimientoCajaResponseDTO(
             m.getId(),
@@ -76,7 +98,8 @@ public class CajaServiceImpl implements CajaService {
             m.getFecha(),
             m.getUsuario().getNombre(),
             habitacion,
-            cliente
+            cliente,
+            empresa
         );
     }
 

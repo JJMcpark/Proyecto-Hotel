@@ -50,7 +50,8 @@ public class ClienteController {
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Actualizar cliente", description = "Permite corregir o actualizar datos del cliente")
     public ResponseEntity<ClienteDTO> actualizarCliente(@PathVariable Long id, @Valid @RequestBody ClienteDTO clienteDTO, Authentication auth) {
-        ClienteDTO cliente = clienteService.actualizarCliente(id, clienteDTO);
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
+        ClienteDTO cliente = clienteService.actualizarCliente(id, clienteDTO, isAdmin);
         return ResponseEntity.ok(cliente);
     }
 
