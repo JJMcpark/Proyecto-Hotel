@@ -60,6 +60,13 @@ public class CajaController {
         return ResponseEntity.ok(cajaService.listarMovimientosPorRango(desde, hasta));
     }
 
+    @GetMapping("/alquiler/{alquilerId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Movimientos por alquiler", description = "Lista los movimientos de caja asociados a un alquiler específico")
+    public ResponseEntity<List<MovimientoCajaResponseDTO>> obtenerMovimientosPorAlquiler(@PathVariable Long alquilerId) {
+        return ResponseEntity.ok(cajaService.listarMovimientosPorAlquiler(alquilerId));
+    }
+
     @GetMapping("/resumen")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Resumen de caja por rango de fechas", description = "Reporte con movimientos, totales y balance. Acción reservada para administrador")
@@ -67,5 +74,14 @@ public class CajaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
         return ResponseEntity.ok(cajaService.obtenerResumen(desde, hasta));
+    }
+
+    @PatchMapping("/{id}/monto")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Editar monto de movimiento", description = "Permite al administrador corregir el monto de un movimiento de caja")
+    public ResponseEntity<MovimientoCajaResponseDTO> actualizarMonto(
+            @PathVariable Long id,
+            @RequestParam java.math.BigDecimal monto) {
+        return ResponseEntity.ok(cajaService.actualizarMonto(id, monto));
     }
 }

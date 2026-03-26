@@ -12,4 +12,6 @@ public class TipoAlquilerDTO {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
     private String nombre;
+    private String unidad;
+    private Integer multiplicador;
 }

@@ -17,4 +17,10 @@ public class TipoAlquiler {
 
     @Column(nullable = false, length = 50)
     private String nombre;
+
+    @Column(nullable = false, length = 10)
+    private String unidad;
+
+    @Column(nullable = false)
+    private Integer multiplicador;
 }

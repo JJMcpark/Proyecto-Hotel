@@ -34,4 +34,6 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
     List<Alquiler> findByHabitacionId(Long habitacionId);
     List<Alquiler> findByFechaIngresoBetween(LocalDateTime inicio, LocalDateTime fin);
     List<Alquiler> findByEstadoAndFechaPrevistaBefore(EstadoAlquiler estado, LocalDateTime fecha);
+    @Query("SELECT COUNT(a) FROM Alquiler a WHERE a.id = :alquilerId AND a.cliente.empresa IS NOT NULL")
+    long countEmpresaAlquilerById(@Param("alquilerId") Long alquilerId);
 }

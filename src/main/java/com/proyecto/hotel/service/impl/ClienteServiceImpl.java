@@ -54,6 +54,10 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public ClienteDTO crearCliente(ClienteDTO clienteDTO) {
+        String numDoc = clienteDTO.getNumDocumento() != null ? clienteDTO.getNumDocumento().trim() : null;
+        if (numDoc != null && clienteRepository.existsByNumDocumento(numDoc)) {
+            throw new BadRequestException("El número de documento ya está registrado");
+        }
         Cliente cliente = clienteMapper.toEntity(clienteDTO);
         asignarTipoDocumento(cliente, clienteDTO);
         asignarEmpresa(cliente, clienteDTO.getEmpresaId());
@@ -68,6 +72,11 @@ public class ClienteServiceImpl implements ClienteService {
                 .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + id));
         if (CLIENTE_PLACEHOLDER_DOC.equals(cliente.getNumDocumento())) {
             throw new BadRequestException("Cliente no encontrado con id: " + id);
+        }
+
+        String numDoc = clienteDTO.getNumDocumento() != null ? clienteDTO.getNumDocumento().trim() : null;
+        if (numDoc != null && clienteRepository.existsByNumDocumentoAndIdNot(numDoc, id)) {
+            throw new BadRequestException("El número de documento ya está registrado por otro cliente");
         }
 
         Long empresaActualId = cliente.getEmpresa() != null ? cliente.getEmpresa().getId() : null;

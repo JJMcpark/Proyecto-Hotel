@@ -23,6 +23,9 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     List<MovimientoCaja> findByTipoAndFechaBetween(TipoMovimiento tipo, LocalDateTime inicio, LocalDateTime fin);
     List<MovimientoCaja> findByUsuarioId(Long usuarioId);
 
-    @Query("SELECT COALESCE(SUM(m.monto), 0) FROM MovimientoCaja m WHERE m.alquiler.id = :alquilerId AND m.tipo = com.proyecto.hotel.model.enums.TipoMovimiento.INGRESO")
-    java.math.BigDecimal sumIngresosByAlquilerId(@Param("alquilerId") Long alquilerId);
+    @Query("SELECT COALESCE(SUM(CASE WHEN m.tipo = com.proyecto.hotel.model.enums.TipoMovimiento.INGRESO THEN m.monto ELSE -m.monto END), 0) FROM MovimientoCaja m WHERE m.alquiler.id = :alquilerId")
+    java.math.BigDecimal sumNetByAlquilerId(@Param("alquilerId") Long alquilerId);
+
+    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente"})
+    List<MovimientoCaja> findByAlquilerId(Long alquilerId);
 }

@@ -47,9 +47,7 @@ public class CuentaAlquilerController {
             Authentication authentication) {
         boolean isRecepcionista = authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
-        boolean alquilerEsEmpresa = alquilerRepository.findById(alquilerId)
-            .map(a -> a.getCliente() != null && a.getCliente().getEmpresa() != null)
-            .orElse(false);
+        boolean alquilerEsEmpresa = alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0;
         if (isRecepcionista && alquilerEsEmpresa) {
             dto.setPrecioUnit(BigDecimal.ZERO);
         }
@@ -76,9 +74,7 @@ public class CuentaAlquilerController {
                 .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
 
         if (isRecepcionista) {
-            boolean alquilerEsEmpresa = alquilerRepository.findById(alquilerId)
-                    .map(a -> a.getCliente() != null && a.getCliente().getEmpresa() != null)
-                    .orElse(false);
+            boolean alquilerEsEmpresa = alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0;
             if (alquilerEsEmpresa) {
                 throw new BadRequestException("No autorizado para marcar como pagado en clientes empresa");
             }
@@ -94,11 +90,12 @@ public class CuentaAlquilerController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
-    @Operation(summary = "Eliminar cargo", description = "Elimina un cargo de la cuenta")
+    @Operation(summary = "Eliminar cargo", description = "Elimina un cargo de la cuenta. Si ya estaba pagado, registra EGRESO compensatorio en caja.")
     public ResponseEntity<Map<String, String>> eliminarCargo(
             @PathVariable Long alquilerId,
-            @PathVariable Long id) {
-        cuentaAlquilerService.eliminarCargo(id);
+            @PathVariable Long id,
+            Authentication authentication) {
+        cuentaAlquilerService.eliminarCargo(id, authentication.getName());
         return ResponseEntity.ok(Map.of("message", "Cargo eliminado correctamente"));
     }
 }

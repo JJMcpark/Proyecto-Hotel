@@ -12,5 +12,7 @@ public interface CajaService {
     MovimientoCajaResponseDTO registrarMovimiento(GastoRequestDTO dto, TipoMovimiento tipo, String dniUsuario);
     List<MovimientoCajaResponseDTO> listarMovimientosHoy();
     List<MovimientoCajaResponseDTO> listarMovimientosPorRango(LocalDate desde, LocalDate hasta);
+    List<MovimientoCajaResponseDTO> listarMovimientosPorAlquiler(Long alquilerId);
     ResumenCajaDTO obtenerResumen(LocalDate desde, LocalDate hasta);
+    MovimientoCajaResponseDTO actualizarMonto(Long id, java.math.BigDecimal monto);
 }

@@ -74,6 +74,14 @@ public class CajaServiceImpl implements CajaService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MovimientoCajaResponseDTO> listarMovimientosPorAlquiler(Long alquilerId) {
+        return cajaRepository.findByAlquilerId(alquilerId).stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
     private MovimientoCajaResponseDTO mapToResponseDTO(MovimientoCaja m) {
         String habitacion = (m.getAlquiler() != null) 
             ? m.getAlquiler().getHabitacion().getNumero() 
@@ -135,5 +143,17 @@ public class CajaServiceImpl implements CajaService {
                 movimientos.size(),
                 movimientos
         );
+    }
+
+    @Override
+    @Transactional
+    public MovimientoCajaResponseDTO actualizarMonto(Long id, BigDecimal monto) {
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new com.proyecto.hotel.handler.BadRequestException("El monto debe ser mayor a 0");
+        }
+        MovimientoCaja movimiento = cajaRepository.findById(id)
+                .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Movimiento no encontrado: " + id));
+        movimiento.setMonto(monto);
+        return mapToResponseDTO(cajaRepository.save(movimiento));
     }
 }

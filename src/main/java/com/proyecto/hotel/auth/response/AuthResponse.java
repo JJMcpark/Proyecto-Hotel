@@ -2,7 +2,6 @@ package com.proyecto.hotel.auth.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.PrePersist;
 import lombok.*;
 
 @Data
@@ -25,11 +24,4 @@ public class AuthResponse {
     private String nombre;
     
     private String rol;
-
-    @PrePersist
-    private void prePersist() {
-        if (this.tokenType == null) {
-            this.tokenType = "Bearer";
-        }
-    }
 }

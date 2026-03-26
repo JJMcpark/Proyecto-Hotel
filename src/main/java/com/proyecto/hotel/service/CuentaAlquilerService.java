@@ -9,5 +9,5 @@ public interface CuentaAlquilerService {
     List<CuentaAlquilerDTO> obtenerCuentasPorAlquiler(Long alquilerId);
     CuentaAlquilerDTO agregarCargo(Long alquilerId, CuentaAlquilerDTO dto);
     CuentaAlquilerDTO actualizarCargo(Long id, CuentaAlquilerDTO dto, String dniUsuario, MetodoPago metodoPago);
-    void eliminarCargo(Long id);
+    void eliminarCargo(Long id, String dniUsuario);
 }

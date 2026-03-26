@@ -101,17 +101,29 @@ public class CuentaAlquilerServiceImpl implements CuentaAlquilerService {
 
     @Override
     @Transactional
-    public void eliminarCargo(Long id) {
+    public void eliminarCargo(Long id, String dniUsuario) {
         CuentaAlquiler cuenta = cuentaAlquilerRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Cargo no encontrado con id: " + id));
 
-        // Solo restar del pago pendiente cuando el cargo aun estaba pendiente.
-        // Si ya estaba pagado, su impacto en pagoPendiente ya fue descontado al marcar PAGADO.
         Alquiler alquiler = cuenta.getAlquiler();
-        if (!EstadoCuenta.PAGADO.equals(cuenta.getEstado())) {
+
+        if (EstadoCuenta.PAGADO.equals(cuenta.getEstado())) {
+            // Si ya estaba pagado, registrar EGRESO compensatorio en caja
+            var usuario = usuarioRepository.findByNumDocumento(dniUsuario)
+                    .orElseThrow(() -> new BadRequestException("Usuario no encontrado: " + dniUsuario));
+            MovimientoCaja egreso = new MovimientoCaja();
+            egreso.setTipo(TipoMovimiento.EGRESO);
+            egreso.setMonto(cuenta.getSubTotal());
+            egreso.setMetodoPago(MetodoPago.EFECTIVO);
+            egreso.setConcepto("Anulación consumo - Hab: " + alquiler.getHabitacion().getNumero() + " - " + cuenta.getDescripcion());
+            egreso.setAlquiler(alquiler);
+            egreso.setUsuario(usuario);
+            movimientoCajaRepository.save(egreso);
+        } else {
+            // Si estaba pendiente, restar del pago pendiente
             alquiler.setPagoPendiente(alquiler.getPagoPendiente().subtract(cuenta.getSubTotal()));
+            alquilerRepository.save(alquiler);
         }
-        alquilerRepository.save(alquiler);
 
         cuentaAlquilerRepository.deleteById(id);
     }

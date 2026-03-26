@@ -67,9 +67,10 @@ public class AlquilerServiceImpl implements AlquilerService {
         }
 
         LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime fechaPrevista = tipoAlq.getNombre().equalsIgnoreCase("POR HORA") 
-                ? ahora.plusHours(dto.cantTiempo()) 
-                : ahora.plusDays(dto.cantTiempo());
+        long totalUnidades = (long) dto.cantTiempo() * tipoAlq.getMultiplicador();
+        LocalDateTime fechaPrevista = "HORA".equalsIgnoreCase(tipoAlq.getUnidad())
+                ? ahora.plusHours(totalUnidades)
+                : ahora.plusDays(totalUnidades);
 
         BigDecimal precioFijado = tarifa.getPrecio();
         BigDecimal subTotal = precioFijado.multiply(BigDecimal.valueOf(dto.cantTiempo()));
@@ -190,7 +191,7 @@ public class AlquilerServiceImpl implements AlquilerService {
 
     private AlquilerResponseDTO mapearResponse(Alquiler a) {
     BigDecimal subTotal = a.getPrecioFijado().multiply(BigDecimal.valueOf(a.getCantTiempo()));
-    BigDecimal totalPagadoCaja = cajaRepository.sumIngresosByAlquilerId(a.getId());
+    BigDecimal totalPagadoCaja = cajaRepository.sumNetByAlquilerId(a.getId());
     String empresaNombre = (a.getCliente() != null && a.getCliente().getEmpresa() != null)
         ? a.getCliente().getEmpresa().getNombre()
         : (a.getEmpresa() != null ? a.getEmpresa().getNombre() : "—");
@@ -198,11 +199,15 @@ public class AlquilerServiceImpl implements AlquilerService {
     // Si la fecha de ingreso es null (porque aún no se refrescó de la DB), usamos la actual
     LocalDateTime fechaInicio = (a.getFechaIngreso() != null) ? a.getFechaIngreso() : LocalDateTime.now();
 
+    String tipoAlquilerNombre = (a.getTarifa() != null && a.getTarifa().getTipoAlquiler() != null)
+        ? a.getTarifa().getTipoAlquiler().getNombre() : "—";
+
     return new AlquilerResponseDTO(
         a.getId(),
         a.getHabitacion().getNumero(),
         a.getCliente().getNombre(),
         empresaNombre,
+        tipoAlquilerNombre,
         totalPagadoCaja,
         subTotal,
         a.getPagoPendiente(),
