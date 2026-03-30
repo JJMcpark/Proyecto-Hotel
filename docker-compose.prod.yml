@@ -1,0 +1,66 @@
+services:
+
+  # ── Base de datos ─────────────────────────────────────────────
+  mysql:
+    image: mysql:8
+    container_name: hotel_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      hoteldatabase
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test:     ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+    networks:
+      - hotel_net
+
+  # ── Backend (Spring Boot) ─────────────────────────────────────
+  backend:
+    build:
+      context:    ./BackendHotel
+      dockerfile: Dockerfile
+    container_name: hotel_backend
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      DB_HOST:             mysql
+      DB_USERNAME:         ${DB_USERNAME}
+      DB_PASSWORD:         ${DB_PASSWORD}
+      DB_FLYWAY_USERNAME:  ${DB_FLYWAY_USERNAME}
+      DB_FLYWAY_PASSWORD:  ${DB_FLYWAY_PASSWORD}
+      JWT_SECRET_KEY:      ${JWT_SECRET_KEY}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
+      COOKIE_SECURE:       ${COOKIE_SECURE:-false}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hotel_net
+
+  # ── Frontend (React + nginx) ──────────────────────────────────
+  frontend:
+    build:
+      context:    ./FrontendHotel
+      dockerfile: Dockerfile
+    container_name: hotel_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hotel_net
+
+volumes:
+  mysql_data:
+
+networks:
+  hotel_net:
+    driver: bridge
