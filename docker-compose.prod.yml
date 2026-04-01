@@ -10,8 +10,8 @@ services:
       MYSQL_DATABASE:      hoteldatabase
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    # ⚠️ NO exponer 3306 al exterior en producción
+    # Solo accesible desde la red interna de Docker
     healthcheck:
       test:     ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -27,8 +27,8 @@ services:
       dockerfile: Dockerfile
     container_name: hotel_backend
     restart: unless-stopped
-    ports:
-      - "8091:8091"
+    # ⚠️ NO exponer 8091 al exterior en producción
+    # Solo accesible desde el contenedor frontend (nginx proxy)
     environment:
       DB_HOST:             mysql
       DB_USERNAME:         ${DB_USERNAME}
