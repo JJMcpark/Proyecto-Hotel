@@ -683,6 +683,12 @@ Verificar que la renovación automática funciona:
 sudo certbot renew --dry-run
 ```
 
+> Si aparece un error de `vps-2b54697f.vps.ovh.net` (certificado viejo de Virtualmin),
+> borralo porque no tiene nada que ver con tu app:
+> ```bash
+> sudo certbot delete --cert-name vps-2b54697f.vps.ovh.net
+> ```
+
 ### 9.6 Actualizar el .env para HTTPS
 
 ```bash
@@ -690,7 +696,7 @@ cd ~/ProyectoHotel
 nano .env
 ```
 
-Cambiar estas dos líneas:
+Cambiar estas dos líneas (borrar las viejas y poner estas):
 ```env
 CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com
 COOKIE_SECURE=true
