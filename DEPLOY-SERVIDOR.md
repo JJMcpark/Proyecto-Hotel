@@ -754,35 +754,35 @@ grep COOKIE .env
 
 # ── DIAGNÓSTICO 2: ¿El frontend responde en puerto 3000? ──────
 echo "=== FRONTEND EN PUERTO 3000 ==="
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000
 # Debe responder: 200
 # Si responde otra cosa, el frontend no está en el puerto 3000
 
 # ── DIAGNÓSTICO 3: ¿El frontend puede alcanzar el backend? ────
 echo "=== PROXY AUTH A TRAVES DEL FRONTEND ==="
-curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3000/auth/login \
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"documento":"00000000","password":"test"}'
+  -d '{"num_documento":"00000000","password":"test"}'
 # Debe responder: 401 o 403 (credenciales incorrectas, pero el backend respondió)
 # Si responde 502 o 504 → el frontend no puede alcanzar al backend
 # Si responde 200 con HTML → algo intercepta la petición (Virtualmin/Apache)
 
 # ── DIAGNÓSTICO 4: ¿El backend responde directamente? ─────────
 echo "=== BACKEND DIRECTO (dentro de Docker) ==="
-docker exec hotel_frontend curl -s -o /dev/null -w "%{http_code}" -X POST \
+docker exec hotel_frontend curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   http://backend:8091/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"documento":"00000000","password":"test"}'
+  -d '{"num_documento":"00000000","password":"test"}'
 # Debe responder: 401 o 403
 # Si falla → el backend no está respondiendo dentro de la red Docker
 
 # ── DIAGNÓSTICO 5: ¿Nginx del host está proxeando bien? ────────
 echo "=== NGINX HOST -> FRONTEND ==="
-curl -s -o /dev/null -w "%{http_code}" -X POST https://localhost/auth/login \
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://localhost/auth/login \
   -H "Content-Type: application/json" \
   -H "Host: hospedajearroyo.com" \
   -k \
-  -d '{"documento":"00000000","password":"test"}'
+  -d '{"num_documento":"00000000","password":"test"}'
 # Debe responder: 401 o 403
 # Si responde 502 → nginx no puede alcanzar el frontend en puerto 3000
 
