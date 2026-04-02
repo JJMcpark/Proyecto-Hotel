@@ -11,5 +11,5 @@ public record CheckInRequestDTO(
     @NotNull Long idTipoAlquiler, // ID de "POR HORA" o "POR NOCHE"
     @Positive int cantTiempo,      // 3 horas o 2 noches
     BigDecimal adelanto,
-    @NotNull MetodoPago metodoPago
+    MetodoPago metodoPago
 ) {}
