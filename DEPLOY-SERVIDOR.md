@@ -643,55 +643,21 @@ curl -I http://localhost:3000
 sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-### 9.4 Crear la configuración de nginx
+### 9.4 Crear la configuración de nginx (sin copiar nada a mano)
+
+El archivo `nginx-host.conf` ya está en el repo. Solo hay que copiarlo:
 
 ```bash
-sudo nano /etc/nginx/sites-available/hotel
-```
+cd ~/ProyectoHotel
 
-Pegar este contenido:
+# Traer la última versión del repo
+git -C BackendHotel pull origin Proyecto
 
-```nginx
-server {
-    listen 80;
-    server_name hospedajearroyo.com;
+# Copiar el archivo de config al lugar correcto de nginx
+sudo cp BackendHotel/nginx-host.conf /etc/nginx/sites-available/hotel
 
-    # Certbot necesita esto para verificar el dominio
-    location /.well-known/acme-challenge/ {
-        root /var/www/html;
-    }
-
-    # Redirigir todo HTTP → HTTPS
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name hospedajearroyo.com;
-
-    # Certbot agrega los certificados automáticamente acá abajo
-
-    # Todo el tráfico va al contenedor frontend
-    location / {
-        proxy_pass         http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Guardar (Ctrl+O, Enter, Ctrl+X).
-
-### 9.5 Activar el sitio y obtener certificado SSL
-
-```bash
-# Activar la configuración
-sudo ln -s /etc/nginx/sites-available/hotel /etc/nginx/sites-enabled/
+# Activar el sitio y desactivar el default
+sudo ln -sf /etc/nginx/sites-available/hotel /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 
 # Verificar que la config está bien escrita
@@ -700,8 +666,11 @@ sudo nginx -t
 
 # Recargar nginx
 sudo systemctl reload nginx
+```
 
-# Obtener certificado SSL gratuito (Let's Encrypt)
+### 9.5 Obtener certificado SSL con Certbot
+
+```bash
 sudo certbot --nginx -d hospedajearroyo.com
 # → Te pide email: ponelo
 # → Aceptar términos: Y
