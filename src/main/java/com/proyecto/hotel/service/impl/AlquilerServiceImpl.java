@@ -97,7 +97,7 @@ public class AlquilerServiceImpl implements AlquilerService {
 
         // 6. Registro en Caja si hubo pago
         if (adelanto.compareTo(BigDecimal.ZERO) > 0) {
-            registrarMovimientoCaja(adelanto, dto.metodoPago(), guardado, usuario, "Check-in");
+            registrarMovimientoCaja(adelanto, dto.metodoPago(), TipoMovimiento.INGRESO, guardado, usuario, "Check-in");
         }
 
         return mapearResponse(guardado);
@@ -123,7 +123,10 @@ public class AlquilerServiceImpl implements AlquilerService {
         cuentaAlquilerRepository.saveAll(cuentasPendientes);
 
         if (alquiler.getPagoPendiente().compareTo(BigDecimal.ZERO) > 0) {
-            registrarMovimientoCaja(alquiler.getPagoPendiente(), metodoPago, alquiler, usuario, "Liquidación Check-out");
+            boolean esEmpresa = alquiler.getEmpresa() != null;
+            TipoMovimiento tipoMov = esEmpresa ? TipoMovimiento.PENDIENTE : TipoMovimiento.INGRESO;
+            MetodoPago metodo = esEmpresa ? null : metodoPago;
+            registrarMovimientoCaja(alquiler.getPagoPendiente(), metodo, tipoMov, alquiler, usuario, "Liquidación Check-out");
             alquiler.setPagoPendiente(BigDecimal.ZERO);
         }
 
@@ -178,9 +181,9 @@ public class AlquilerServiceImpl implements AlquilerService {
         return mapearResponse(alquilerRepository.save(alquiler));
     }
 
-    private void registrarMovimientoCaja(BigDecimal monto, MetodoPago metodo, Alquiler alq, Usuario usu, String concepto) {
+    private void registrarMovimientoCaja(BigDecimal monto, MetodoPago metodo, TipoMovimiento tipo, Alquiler alq, Usuario usu, String concepto) {
         MovimientoCaja mov = new MovimientoCaja();
-        mov.setTipo(TipoMovimiento.INGRESO);
+        mov.setTipo(tipo);
         mov.setMonto(monto);
         mov.setMetodoPago(metodo);
         mov.setConcepto(concepto + " - Hab: " + alq.getHabitacion().getNumero());

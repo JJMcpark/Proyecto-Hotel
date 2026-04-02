@@ -17,15 +17,15 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     List<MovimientoCaja> findByTipo(TipoMovimiento tipo);
     List<MovimientoCaja> findByMetodoPago(MetodoPago metodoPago);
 
-    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente"})
+    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente", "alquiler.cliente.empresa"})
     List<MovimientoCaja> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
 
     List<MovimientoCaja> findByTipoAndFechaBetween(TipoMovimiento tipo, LocalDateTime inicio, LocalDateTime fin);
     List<MovimientoCaja> findByUsuarioId(Long usuarioId);
 
-    @Query("SELECT COALESCE(SUM(CASE WHEN m.tipo = com.proyecto.hotel.model.enums.TipoMovimiento.INGRESO THEN m.monto ELSE -m.monto END), 0) FROM MovimientoCaja m WHERE m.alquiler.id = :alquilerId")
+    @Query("SELECT COALESCE(SUM(m.monto), 0) FROM MovimientoCaja m WHERE m.alquiler.id = :alquilerId AND m.tipo = com.proyecto.hotel.model.enums.TipoMovimiento.INGRESO")
     java.math.BigDecimal sumNetByAlquilerId(@Param("alquilerId") Long alquilerId);
 
-    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente"})
+    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente", "alquiler.cliente.empresa"})
     List<MovimientoCaja> findByAlquilerId(Long alquilerId);
 }

@@ -101,7 +101,7 @@ public class CajaServiceImpl implements CajaService {
             m.getId(),
             m.getTipo().name(),
             m.getMonto(),
-            m.getMetodoPago().name(),
+            m.getMetodoPago() != null ? m.getMetodoPago().name() : null,
             m.getConcepto(),
             m.getFecha(),
             m.getUsuario().getNombre(),
@@ -154,6 +154,19 @@ public class CajaServiceImpl implements CajaService {
         MovimientoCaja movimiento = cajaRepository.findById(id)
                 .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Movimiento no encontrado: " + id));
         movimiento.setMonto(monto);
+        return mapToResponseDTO(cajaRepository.save(movimiento));
+    }
+
+    @Override
+    @Transactional
+    public MovimientoCajaResponseDTO cobrarMovimiento(Long id, com.proyecto.hotel.model.enums.MetodoPago metodoPago) {
+        MovimientoCaja movimiento = cajaRepository.findById(id)
+                .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Movimiento no encontrado: " + id));
+        if (movimiento.getTipo() != TipoMovimiento.PENDIENTE) {
+            throw new com.proyecto.hotel.handler.BadRequestException("El movimiento no está en estado PENDIENTE");
+        }
+        movimiento.setTipo(TipoMovimiento.INGRESO);
+        movimiento.setMetodoPago(metodoPago);
         return mapToResponseDTO(cajaRepository.save(movimiento));
     }
 }

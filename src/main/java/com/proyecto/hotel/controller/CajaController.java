@@ -1,5 +1,6 @@
 package com.proyecto.hotel.controller;
 
+import com.proyecto.hotel.model.enums.MetodoPago;
 import com.proyecto.hotel.model.enums.TipoMovimiento;
 import com.proyecto.hotel.service.CajaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,5 +84,14 @@ public class CajaController {
             @PathVariable Long id,
             @RequestParam java.math.BigDecimal monto) {
         return ResponseEntity.ok(cajaService.actualizarMonto(id, monto));
+    }
+
+    @PatchMapping("/{id}/cobrar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Registrar pago de empresa", description = "Cambia un movimiento PENDIENTE a INGRESO registrando el método de pago")
+    public ResponseEntity<MovimientoCajaResponseDTO> cobrarMovimiento(
+            @PathVariable Long id,
+            @RequestParam MetodoPago metodoPago) {
+        return ResponseEntity.ok(cajaService.cobrarMovimiento(id, metodoPago));
     }
 }

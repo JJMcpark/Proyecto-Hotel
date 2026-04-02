@@ -25,13 +25,13 @@ public class LoginAttemptService {
         AttemptInfo info = attempts.get(numDocumento);
         if (info == null) return;
 
-        if (info.lockUntil != null && Instant.now().isBefore(info.lockUntil)) {
-            throw new TooManyLoginAttemptsException("Cuenta bloqueada temporalmente. Intenta más tarde.");
-        }
-
-        if (info.attempts >= MAX_ATTEMPTS) {
-            info.lockUntil = Instant.now().plus(LOCK_DURATION);
-            throw new TooManyLoginAttemptsException("Cuenta bloqueada temporalmente. Intenta más tarde.");
+        if (info.lockUntil != null) {
+            Instant now = Instant.now();
+            if (now.isBefore(info.lockUntil)) {
+                throw new TooManyLoginAttemptsException("Cuenta bloqueada temporalmente. Intenta más tarde.");
+            }
+            // El bloqueo expiró: reiniciar estado para permitir nuevos intentos.
+            attempts.remove(numDocumento);
         }
     }
 
@@ -41,6 +41,13 @@ public class LoginAttemptService {
 
     public void loginFailed(String numDocumento) {
         AttemptInfo info = attempts.computeIfAbsent(numDocumento, k -> new AttemptInfo());
+
+        // Si existía un bloqueo expirado, reiniciar el contador antes de registrar el nuevo fallo.
+        if (info.lockUntil != null && !Instant.now().isBefore(info.lockUntil)) {
+            info.attempts = 0;
+            info.lockUntil = null;
+        }
+
         info.attempts++;
         if (info.attempts >= MAX_ATTEMPTS) {
             info.lockUntil = Instant.now().plus(LOCK_DURATION);

@@ -27,7 +27,7 @@ public class MovimientoCaja {
     private BigDecimal monto;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "metodo_pago", nullable = false, length = 50)
+    @Column(name = "metodo_pago", length = 50)
     private MetodoPago metodoPago;
 
     @Column(nullable = false, length = 255)

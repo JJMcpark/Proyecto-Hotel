@@ -37,8 +37,8 @@ public class AlquilerController {
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Registrar check-out", description = "Finaliza un alquiler y liquida el pago pendiente si existe")
     public ResponseEntity<AlquilerResponseDTO> checkOut(
-            @PathVariable Long id, 
-            @RequestParam MetodoPago metodoPago, 
+            @PathVariable Long id,
+            @RequestParam(required = false) MetodoPago metodoPago,
             Authentication auth) {
         return ResponseEntity.ok(alquilerService.registrarCheckOut(id, auth.getName(), metodoPago));
     }
