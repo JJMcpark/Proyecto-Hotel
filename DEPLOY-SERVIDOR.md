@@ -691,20 +691,32 @@ sudo certbot renew --dry-run
 
 ### 9.6 Actualizar el .env para HTTPS
 
+> ⚠️ **SIN ESTO EL LOGIN NO FUNCIONA CON HTTPS**.
+> El backend rechaza las peticiones si CORS no coincide con la URL del navegador.
+
 ```bash
 cd ~/ProyectoHotel
-nano .env
-```
 
-Cambiar estas dos líneas (borrar las viejas y poner estas):
-```env
-CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com
-COOKIE_SECURE=true
-```
+# Cambiar CORS de http://IP a https://dominio
+sed -i 's|CORS_ALLOWED_ORIGIN=.*|CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com|' .env
 
-Guardar (Ctrl+O, Enter, Ctrl+X) y reiniciar el backend:
-```bash
+# Cambiar COOKIE_SECURE de false a true
+sed -i 's|COOKIE_SECURE=.*|COOKIE_SECURE=true|' .env
+
+# Verificar que quedó bien
+grep CORS .env
+grep COOKIE .env
+# Debe mostrar:
+#   CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com
+#   COOKIE_SECURE=true
+
+# Reiniciar el backend para que tome los cambios
 docker compose restart backend
+
+# Esperar 10 segundos y verificar que arrancó
+sleep 10
+docker compose ps
+# hotel_backend debe decir "Up"
 ```
 
 ### 9.7 Verificar
@@ -713,7 +725,14 @@ Abrí en el navegador: `https://hospedajearroyo.com`
 
 - Debe cargar el login con el candado verde (HTTPS)
 - `http://hospedajearroyo.com` debe redirigir automáticamente a `https://`
-- El login debe funcionar
+- Probá loguearte con DNI `00000000`
+- Si dice "Credenciales inválidas o servidor no disponible", revisá los logs:
+
+```bash
+cd ~/ProyectoHotel
+docker compose logs --tail 30 backend
+# Buscar errores de CORS, conexión a MySQL, o excepciones Java
+```
 
 ### Arquitectura final con dominio
 
