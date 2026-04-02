@@ -228,6 +228,65 @@ sudo ss -tlnp | grep :3306
 > Los `2>/dev/null` hacen que no dé error si el servicio no existe.
 > Esto NO afecta a Webmin — Webmin sigue funcionando en el puerto 10000.
 
+### 4.1 Crear swap (si el VPS tiene 2 GB de RAM o menos)
+
+Maven necesita bastante RAM para compilar. Si el VPS tiene poca memoria,
+el build falla silenciosamente. Crear swap lo soluciona:
+
+```bash
+# Ver cuánta RAM y swap tenés
+free -h
+
+# Si "Swap" dice 0, crear 2 GB de swap:
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Verificar que se activó
+free -h
+# Ahora "Swap" debe mostrar 2.0G
+```
+
+### 4.2 Configurar DNS de Docker
+
+Docker a veces no puede resolver nombres de dominio (ej. `repo.maven.apache.org`)
+porque hereda un DNS interno que no funciona. Hay que forzar DNS públicos:
+
+```bash
+# 1. Verificar que el VPS sí tiene internet
+ping -c 2 repo.maven.apache.org
+# Si muestra respuesta → el VPS tiene internet, el problema es Docker
+# Si dice "unknown host" → el VPS tampoco tiene DNS, ir al paso 4.2B
+
+# 2. Crear la configuración de DNS para Docker
+echo '{"dns": ["8.8.8.8", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json
+
+# 3. Verificar que se grabó correctamente
+cat /etc/docker/daemon.json
+# Debe mostrar exactamente: {"dns": ["8.8.8.8", "1.1.1.1"]}
+
+# 4. Reiniciar Docker para que tome la nueva config
+sudo systemctl restart docker
+
+# 5. Verificar que Docker puede resolver DNS
+docker run --rm alpine nslookup repo.maven.apache.org
+# Debe mostrar una IP (ej: 151.101.112.215). Si dice "can't resolve", repetir desde el paso 2.
+```
+
+**Si el paso 1 (ping) también falla** — el DNS del VPS está roto:
+
+```bash
+# 4.2B — Arreglar DNS del propio VPS primero
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+
+# Verificar
+ping -c 2 repo.maven.apache.org
+# Ahora debería funcionar. Continuar con el paso 2 de arriba (daemon.json).
+```
+
 ---
 
 ## 5. Clonar los repositorios
@@ -466,8 +525,12 @@ cat .env
 
 ### 9.1 Apuntar el dominio a tu servidor (DNS)
 
-Entrá al panel donde compraste el dominio (Namecheap, GoDaddy, Cloudflare, etc.)
-y creá un **registro DNS tipo A**:
+> **Si tu VPS tiene Virtualmin con BIND** (como el nuestro), los registros DNS
+> ya están creados automáticamente en Virtualmin → DNS Settings → DNS Records.
+> `hospedajearroyo.com` ya apunta a `135.125.199.172`. Solo falta que el DNS
+> esté accesible desde internet (paso 9.1B).
+
+Si NO usás Virtualmin, entrá al panel donde compraste el dominio y creá un **registro DNS tipo A**:
 
 | Campo | Valor |
 |---|---|
@@ -475,6 +538,64 @@ y creá un **registro DNS tipo A**:
 | **Nombre** | `@` (dominio raíz) |
 | **Valor/IP** | `135.125.199.172` |
 | **TTL** | 300 |
+
+### 9.1B Abrir puerto DNS y verificar que BIND funciona
+
+Los nameservers del dominio son `ns1.hospedajearroyo.com` y `ns2.hospedajearroyo.com`,
+que corren en el mismo VPS con BIND. Para que funcionen, el puerto 53 debe estar abierto:
+
+```bash
+# 1. Verificar que BIND (named) está corriendo
+sudo systemctl status named
+# Si dice "inactive" o "not found":
+sudo systemctl start named
+sudo systemctl enable named
+
+# 2. Abrir el puerto 53 (DNS) en UFW
+sudo ufw allow 53/tcp
+sudo ufw allow 53/udp
+sudo ufw reload
+
+# 3. Verificar que el DNS responde localmente
+dig hospedajearroyo.com @localhost
+# Debe mostrar 135.125.199.172 en la sección "ANSWER"
+
+# 4. Verificar que el DNS responde desde afuera
+dig hospedajearroyo.com @135.125.199.172
+# Si también muestra 135.125.199.172, el DNS está funcionando
+```
+
+> ⚠️ **La propagación DNS puede tardar hasta 24 horas** después de configurar
+> los nameservers en el registrador (Hosting SSD). Mientras tanto,
+> la app funciona por IP: `http://135.125.199.172`
+
+### 9.1C Si el dominio no resuelve después de esperar
+
+Si pasaron más de 30 minutos y `hospedajearroyo.com` sigue sin resolver:
+
+```bash
+# Verificar que el puerto 53 responde desde el VPS
+sudo ss -tlnp | grep :53
+# Debe mostrar "named" escuchando
+
+# Si named no aparece, reinstalar BIND
+sudo apt install -y bind9
+sudo systemctl start named
+sudo systemctl enable named
+```
+
+**Alternativa rápida — Usar Cloudflare como DNS** (si BIND no coopera):
+
+1. Crear cuenta gratis en https://dash.cloudflare.com/sign-up
+2. Agregar sitio `hospedajearroyo.com` → plan Free
+3. Cloudflare te da 2 nameservers (ej: `ada.ns.cloudflare.com`, `bob.ns.cloudflare.com`)
+4. En Hosting SSD → Nombre de Servidores → reemplazar los actuales por los de Cloudflare → Guardar
+5. En Cloudflare → DNS → Add record:
+   - Type: A
+   - Name: @
+   - IPv4: 135.125.199.172
+   - Proxy: OFF (nube gris, "DNS only")
+   - Save
 
 Esperá 5-30 minutos a que propague. Verificá desde el servidor:
 
