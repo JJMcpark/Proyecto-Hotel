@@ -734,6 +734,69 @@ docker compose logs --tail 30 backend
 # Buscar errores de CORS, conexión a MySQL, o excepciones Java
 ```
 
+### 9.8 Si el login falla con "Credenciales inválidas" o error XML
+
+Ejecutar estos diagnósticos **uno por uno** y leer lo que devuelve cada uno:
+
+```bash
+cd ~/ProyectoHotel
+
+# ── DIAGNÓSTICO 1: ¿El .env tiene los valores correctos? ──────
+echo "=== .ENV ==="
+grep CORS .env
+grep COOKIE .env
+# CORS_ALLOWED_ORIGIN debe decir exactamente: https://hospedajearroyo.com
+# COOKIE_SECURE debe decir: true
+# Si no, corregir con:
+#   sed -i 's|CORS_ALLOWED_ORIGIN=.*|CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com|' .env
+#   sed -i 's|COOKIE_SECURE=.*|COOKIE_SECURE=true|' .env
+#   docker compose restart backend
+
+# ── DIAGNÓSTICO 2: ¿El frontend responde en puerto 3000? ──────
+echo "=== FRONTEND EN PUERTO 3000 ==="
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+# Debe responder: 200
+# Si responde otra cosa, el frontend no está en el puerto 3000
+
+# ── DIAGNÓSTICO 3: ¿El frontend puede alcanzar el backend? ────
+echo "=== PROXY AUTH A TRAVES DEL FRONTEND ==="
+curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"documento":"00000000","password":"test"}'
+# Debe responder: 401 o 403 (credenciales incorrectas, pero el backend respondió)
+# Si responde 502 o 504 → el frontend no puede alcanzar al backend
+# Si responde 200 con HTML → algo intercepta la petición (Virtualmin/Apache)
+
+# ── DIAGNÓSTICO 4: ¿El backend responde directamente? ─────────
+echo "=== BACKEND DIRECTO (dentro de Docker) ==="
+docker exec hotel_frontend curl -s -o /dev/null -w "%{http_code}" -X POST \
+  http://backend:8091/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"documento":"00000000","password":"test"}'
+# Debe responder: 401 o 403
+# Si falla → el backend no está respondiendo dentro de la red Docker
+
+# ── DIAGNÓSTICO 5: ¿Nginx del host está proxeando bien? ────────
+echo "=== NGINX HOST -> FRONTEND ==="
+curl -s -o /dev/null -w "%{http_code}" -X POST https://localhost/auth/login \
+  -H "Content-Type: application/json" \
+  -H "Host: hospedajearroyo.com" \
+  -k \
+  -d '{"documento":"00000000","password":"test"}'
+# Debe responder: 401 o 403
+# Si responde 502 → nginx no puede alcanzar el frontend en puerto 3000
+
+# ── DIAGNÓSTICO 6: ¿Hay algo más corriendo en puerto 80? ──────
+echo "=== QUE OCUPA EL PUERTO 80 ==="
+sudo ss -tlnp | grep :80
+# Debe mostrar nginx y/o docker-proxy, NO apache2
+# Si aparece apache2:
+#   sudo systemctl stop apache2
+#   sudo systemctl disable apache2
+```
+
+> **IMPORTANTE**: Copiar todos los resultados de los 6 diagnósticos.
+
 ### Arquitectura final con dominio
 
 ```
