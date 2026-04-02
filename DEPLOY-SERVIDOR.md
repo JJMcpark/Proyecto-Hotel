@@ -118,6 +118,37 @@ docker compose version
 > ⚠️ **CRÍTICO**: Permitir SSH **ANTES** de activar el firewall.
 > Si activás UFW sin permitir SSH, perdés acceso al servidor.
 
+### 3.1 Instalar UFW y desactivar firewalls conflictivos
+
+Los VPS con Virtualmin/Webmin suelen traer `firewalld` o `iptables` gestionado
+por Webmin en lugar de UFW. Hay que instalar UFW y desactivar lo que interfiera:
+
+```bash
+# Instalar UFW (si no está instalado)
+sudo apt install -y ufw
+
+# Desactivar firewalld si existe (Virtualmin lo instala a veces)
+sudo systemctl stop firewalld 2>/dev/null
+sudo systemctl disable firewalld 2>/dev/null
+sudo systemctl mask firewalld 2>/dev/null
+
+# Si Webmin tiene su módulo de firewall activo, desactivar el servicio webmin-firewall
+sudo systemctl stop webmin-firewalld 2>/dev/null
+sudo systemctl disable webmin-firewalld 2>/dev/null
+
+# Limpiar reglas viejas de iptables que puedan interferir
+sudo iptables -F 2>/dev/null
+sudo iptables -X 2>/dev/null
+sudo iptables -P INPUT ACCEPT 2>/dev/null
+sudo iptables -P FORWARD ACCEPT 2>/dev/null
+sudo iptables -P OUTPUT ACCEPT 2>/dev/null
+```
+
+> Los comandos con `2>/dev/null` no dan error si el servicio no existe.
+> Es seguro ejecutarlos todos aunque tu VPS no tenga firewalld instalado.
+
+### 3.2 Configurar UFW
+
 ```bash
 # 1. Permitir SSH (SIEMPRE PRIMERO!)
 sudo ufw allow OpenSSH
@@ -128,7 +159,7 @@ sudo ufw allow 80/tcp
 # 3. Permitir HTTPS
 sudo ufw allow 443/tcp
 
-# 4. Permitir Webmin (si tu proveedor lo usa)
+# 4. Permitir Webmin
 sudo ufw allow 10000/tcp
 
 # 5. Ahora sí, activar el firewall
@@ -167,25 +198,35 @@ OpenSSH (v6)               ALLOW       Anywhere (v6)
 
 ---
 
-## 4. Liberar el puerto 80 (si algo lo ocupa)
+## 4. Liberar puertos y parar servicios de Virtualmin que interfieren
 
-> Virtualmin/Webmin o Apache pueden estar ocupando el puerto 80.
+> Virtualmin/Webmin instala Apache, MySQL/MariaDB y otros servicios.
+> La app usa Docker para todo, así que hay que parar los del host.
 
 ```bash
-# Ver si algo está corriendo en el puerto 80
-sudo ss -tlnp | grep :80
-
-# Si aparece Apache, pararlo y deshabilitarlo
+# ── Parar Apache (ocupa el puerto 80) ─────────────────────────
 sudo systemctl stop apache2 2>/dev/null
 sudo systemctl disable apache2 2>/dev/null
 
-# Si aparece nginx del sistema (no Docker), pararlo también
+# ── Parar nginx del host (si existe, no confundir con el de Docker) ──
 sudo systemctl stop nginx 2>/dev/null
 sudo systemctl disable nginx 2>/dev/null
 
-# Confirmar que el puerto 80 quedó libre (no debe mostrar nada)
+# ── Parar MySQL/MariaDB del host (la app usa MySQL en Docker) ──
+sudo systemctl stop mysql 2>/dev/null
+sudo systemctl disable mysql 2>/dev/null
+sudo systemctl stop mariadb 2>/dev/null
+sudo systemctl disable mariadb 2>/dev/null
+
+# ── Confirmar que el puerto 80 quedó libre (no debe mostrar nada) ──
 sudo ss -tlnp | grep :80
+
+# ── Confirmar que el puerto 3306 del host quedó libre ──────────
+sudo ss -tlnp | grep :3306
 ```
+
+> Los `2>/dev/null` hacen que no dé error si el servicio no existe.
+> Esto NO afecta a Webmin — Webmin sigue funcionando en el puerto 10000.
 
 ---
 
@@ -296,7 +337,7 @@ COOKIE_SECURE=false
 
 > ⚠️ **CORS_ALLOWED_ORIGIN** debe ser exactamente la URL con la que accedés desde el navegador.
 > - Solo IP: `http://135.125.199.172` (sin barra al final, sin puerto)
-> - Con dominio y HTTPS: `https://tudominio.com`
+> - Con dominio y HTTPS: `https://hospedajearroyo.com`
 > - Si no coincide, el backend rechaza las peticiones y el login falla.
 
 > ⚠️ **COOKIE_SECURE=false** cuando usás HTTP.
@@ -431,18 +472,14 @@ y creá un **registro DNS tipo A**:
 | Campo | Valor |
 |---|---|
 | **Tipo** | A |
-| **Nombre** | `@` (dominio raíz) o `hotel` (subdominio hotel.tudominio.com) |
+| **Nombre** | `@` (dominio raíz) |
 | **Valor/IP** | `135.125.199.172` |
 | **TTL** | 300 |
-
-- Si ponés `@` → accedés con `tudominio.com`
-- Si ponés `hotel` → accedés con `hotel.tudominio.com`
 
 Esperá 5-30 minutos a que propague. Verificá desde el servidor:
 
 ```bash
-# Reemplazar con tu dominio real
-ping tudominio.com
+ping hospedajearroyo.com
 # Debe resolver a 135.125.199.172
 ```
 
@@ -491,12 +528,12 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 sudo nano /etc/nginx/sites-available/hotel
 ```
 
-Pegar este contenido. **Reemplazá `tudominio.com`** con tu dominio real en las 3 líneas donde aparece:
+Pegar este contenido:
 
 ```nginx
 server {
     listen 80;
-    server_name tudominio.com;
+    server_name hospedajearroyo.com;
 
     # Certbot necesita esto para verificar el dominio
     location /.well-known/acme-challenge/ {
@@ -511,7 +548,7 @@ server {
 
 server {
     listen 443 ssl;
-    server_name tudominio.com;
+    server_name hospedajearroyo.com;
 
     # Certbot agrega los certificados automáticamente acá abajo
 
@@ -544,8 +581,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 # Obtener certificado SSL gratuito (Let's Encrypt)
-# Reemplazá tudominio.com con tu dominio real
-sudo certbot --nginx -d tudominio.com
+sudo certbot --nginx -d hospedajearroyo.com
 # → Te pide email: ponelo
 # → Aceptar términos: Y
 # → Compartir email con EFF: N (o Y, como quieras)
@@ -564,9 +600,9 @@ cd ~/ProyectoHotel
 nano .env
 ```
 
-Cambiar estas dos líneas (reemplazá con tu dominio real):
+Cambiar estas dos líneas:
 ```env
-CORS_ALLOWED_ORIGIN=https://tudominio.com
+CORS_ALLOWED_ORIGIN=https://hospedajearroyo.com
 COOKIE_SECURE=true
 ```
 
@@ -577,16 +613,16 @@ docker compose restart backend
 
 ### 9.7 Verificar
 
-Abrí en el navegador: `https://tudominio.com`
+Abrí en el navegador: `https://hospedajearroyo.com`
 
 - Debe cargar el login con el candado verde (HTTPS)
-- `http://tudominio.com` debe redirigir automáticamente a `https://`
+- `http://hospedajearroyo.com` debe redirigir automáticamente a `https://`
 - El login debe funcionar
 
 ### Arquitectura final con dominio
 
 ```
-Usuario → https://tudominio.com
+Usuario → https://hospedajearroyo.com
               │
               ▼
     ┌──────────────────────┐
@@ -708,7 +744,7 @@ cd ~/ProyectoHotel && docker compose up --build -d
 grep CORS ~/ProyectoHotel/.env
 # Debe ser EXACTAMENTE la URL que usás:
 #   Por IP:      http://135.125.199.172  (sin /, sin puerto)
-#   Con dominio: https://tudominio.com
+#   Con dominio: https://hospedajearroyo.com
 # Si no coincide, corregir y reiniciar:
 nano ~/ProyectoHotel/.env
 docker compose restart backend

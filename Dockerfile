@@ -2,12 +2,14 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
+ENV MAVEN_OPTS="-Xmx512m"
+
 # Descarga dependencias primero (capa cacheada si pom.xml no cambia)
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+RUN mvn dependency:go-offline -B || true
 
 COPY src ./src
-RUN mvn package -DskipTests -q
+RUN mvn package -DskipTests -B
 
 # ── Etapa 2: imagen final ligera ──────────────────────────────────
 FROM eclipse-temurin:21-jre-jammy
