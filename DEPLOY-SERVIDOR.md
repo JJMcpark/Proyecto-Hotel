@@ -797,6 +797,35 @@ sudo ss -tlnp | grep :80
 
 > **IMPORTANTE**: Copiar todos los resultados de los 6 diagnósticos.
 
+### 9.9 Fix directo si aparece error XML en `/auth/login`
+
+Si el login carga pero el navegador muestra error XML en `https://hospedajearroyo.com/auth/login`,
+aplicá este reset de nginx del host (sin editar manualmente):
+
+```bash
+cd ~/ProyectoHotel
+
+# 1) Traer la versión corregida del archivo de nginx
+git -C BackendHotel pull origin Proyecto
+
+# 2) Reinstalar config del host nginx
+sudo cp BackendHotel/nginx-host.conf /etc/nginx/sites-available/hotel
+sudo ln -sf /etc/nginx/sites-available/hotel /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# 3) Validar y recargar nginx
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 4) Reaplicar/ajustar HTTPS con certbot sobre este archivo
+sudo certbot --nginx --redirect -d hospedajearroyo.com -d www.hospedajearroyo.com
+
+# 5) Verificar backend y frontend arriba
+docker compose ps
+```
+
+Después probá de nuevo `https://hospedajearroyo.com`.
+
 ### Arquitectura final con dominio
 
 ```
