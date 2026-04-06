@@ -3,6 +3,8 @@ package com.proyecto.hotel.model.entities;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
 import com.proyecto.hotel.model.enums.EstadoAlquiler;
 
@@ -59,6 +61,15 @@ public class Alquiler {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_empresa")
     private Empresa empresa;
+
+    @Builder.Default
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "alquiler_cliente",
+        joinColumns = @JoinColumn(name = "id_alquiler"),
+        inverseJoinColumns = @JoinColumn(name = "id_cliente")
+    )
+    private List<Cliente> huespedes = new ArrayList<>();
 
     @PrePersist
     private void prePersist() {

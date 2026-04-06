@@ -17,4 +17,5 @@ public interface CajaService {
     ResumenCajaDTO obtenerResumen(LocalDate desde, LocalDate hasta);
     MovimientoCajaResponseDTO actualizarMonto(Long id, java.math.BigDecimal monto);
     MovimientoCajaResponseDTO cobrarMovimiento(Long id, MetodoPago metodoPago);
+    List<MovimientoCajaResponseDTO> cobrarLoteEmpresa(Long empresaId, LocalDate desde, LocalDate hasta, MetodoPago metodoPago);
 }

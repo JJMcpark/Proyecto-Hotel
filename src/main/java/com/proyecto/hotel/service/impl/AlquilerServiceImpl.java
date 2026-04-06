@@ -10,6 +10,7 @@ import com.proyecto.hotel.controller.request.CheckInRequestDTO;
 import com.proyecto.hotel.controller.response.AlquilerResponseDTO;
 import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.entities.Alquiler;
+import com.proyecto.hotel.model.entities.Cliente;
 import com.proyecto.hotel.model.entities.MovimientoCaja;
 import com.proyecto.hotel.model.entities.Usuario;
 import com.proyecto.hotel.model.enums.EstadoAlquiler;
@@ -19,6 +20,8 @@ import com.proyecto.hotel.model.enums.TipoMovimiento;
 import com.proyecto.hotel.model.repository.AlquilerRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import com.proyecto.hotel.model.entities.CuentaAlquiler;
 import com.proyecto.hotel.model.enums.EstadoCuenta;
@@ -89,7 +92,19 @@ public class AlquilerServiceImpl implements AlquilerService {
         alquiler.setEstado(EstadoAlquiler.ACTIVO);
         alquiler.setFechaPrevista(fechaPrevista);
         alquiler.setEmpresa(cliente.getEmpresa());
-        
+
+        // Asignar huéspedes: si viene lista, usarla; si no, solo el representante
+        if (dto.idHuespedes() != null && !dto.idHuespedes().isEmpty()) {
+            List<com.proyecto.hotel.model.entities.Cliente> huespedesEntities =
+                new java.util.ArrayList<>(clienteRepository.findAllById(dto.idHuespedes()));
+            if (huespedesEntities.stream().noneMatch(h -> h.getId().equals(cliente.getId()))) {
+                huespedesEntities.add(0, cliente);
+            }
+            alquiler.setHuespedes(huespedesEntities);
+        } else {
+            alquiler.setHuespedes(new java.util.ArrayList<>(List.of(cliente)));
+        }
+
         var guardado = alquilerRepository.save(alquiler);
 
         habitacion.setEstado(EstadoHabitacion.OCUPADA);
@@ -139,16 +154,20 @@ public class AlquilerServiceImpl implements AlquilerService {
     @Override
     @Transactional(readOnly = true)
     public List<AlquilerResponseDTO> listarAlquileresActivos() {
-        return alquilerRepository.findByEstado(EstadoAlquiler.ACTIVO).stream()
-                .map(this::mapearResponse)
+        List<Alquiler> lista = alquilerRepository.findByEstado(EstadoAlquiler.ACTIVO);
+        Map<Long, BigDecimal> sumMap = buildSumMap(lista);
+        return lista.stream()
+                .map(a -> mapearResponse(a, sumMap))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AlquilerResponseDTO> listarHistorial() {
-        return alquilerRepository.findByEstado(EstadoAlquiler.FINALIZADO).stream()
-                .map(this::mapearResponse)
+        List<Alquiler> lista = alquilerRepository.findByEstado(EstadoAlquiler.FINALIZADO);
+        Map<Long, BigDecimal> sumMap = buildSumMap(lista);
+        return lista.stream()
+                .map(a -> mapearResponse(a, sumMap))
                 .collect(Collectors.toList());
     }
 
@@ -168,6 +187,10 @@ public class AlquilerServiceImpl implements AlquilerService {
 
         if (subTotal.compareTo(BigDecimal.ZERO) < 0 || pagoPendiente.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("Los montos no pueden ser negativos");
+        }
+
+        if (pagoPendiente.compareTo(subTotal) > 0) {
+            throw new BadRequestException("El pago pendiente no puede superar el subtotal");
         }
 
         if (alquiler.getCantTiempo() == null || alquiler.getCantTiempo() <= 0) {
@@ -192,9 +215,25 @@ public class AlquilerServiceImpl implements AlquilerService {
         cajaRepository.save(mov);
     }
 
+    private Map<Long, BigDecimal> buildSumMap(List<Alquiler> lista) {
+        List<Long> ids = lista.stream().map(Alquiler::getId).collect(Collectors.toList());
+        if (ids.isEmpty()) return new HashMap<>();
+        Map<Long, BigDecimal> map = new HashMap<>();
+        for (Object[] row : cajaRepository.sumNetByAlquilerIds(ids)) {
+            map.put((Long) row[0], (BigDecimal) row[1]);
+        }
+        return map;
+    }
+
     private AlquilerResponseDTO mapearResponse(Alquiler a) {
+        return mapearResponse(a, null);
+    }
+
+    private AlquilerResponseDTO mapearResponse(Alquiler a, Map<Long, BigDecimal> sumMap) {
     BigDecimal subTotal = a.getPrecioFijado().multiply(BigDecimal.valueOf(a.getCantTiempo()));
-    BigDecimal totalPagadoCaja = cajaRepository.sumNetByAlquilerId(a.getId());
+    BigDecimal totalPagadoCaja = (sumMap != null)
+        ? sumMap.getOrDefault(a.getId(), BigDecimal.ZERO)
+        : cajaRepository.sumNetByAlquilerId(a.getId());
     String empresaNombre = (a.getCliente() != null && a.getCliente().getEmpresa() != null)
         ? a.getCliente().getEmpresa().getNombre()
         : (a.getEmpresa() != null ? a.getEmpresa().getNombre() : "—");
@@ -204,6 +243,10 @@ public class AlquilerServiceImpl implements AlquilerService {
 
     String tipoAlquilerNombre = (a.getTarifa() != null && a.getTarifa().getTipoAlquiler() != null)
         ? a.getTarifa().getTipoAlquiler().getNombre() : "—";
+
+    List<String> huespedesNombres = (a.getHuespedes() != null)
+        ? a.getHuespedes().stream().map(com.proyecto.hotel.model.entities.Cliente::getNombre).collect(Collectors.toList())
+        : List.of();
 
     return new AlquilerResponseDTO(
         a.getId(),
@@ -216,8 +259,54 @@ public class AlquilerServiceImpl implements AlquilerService {
         a.getPagoPendiente(),
         fechaInicio,
         a.getFechaPrevista(),
-        a.getEstado().name(),              // .name() convierte el Enum Alquiler a String
-        a.getHabitacion().getEstado().name() // .name() convierte el Enum Habitación a String
+        a.getFechaSalida(),
+        a.getEstado().name(),
+        a.getHabitacion().getEstado().name(),
+        huespedesNombres
     );
 }
+
+    @Override
+    @Transactional
+    public AlquilerResponseDTO agregarHuesped(Long idAlquiler, Long idCliente) {
+        Alquiler alquiler = alquilerRepository.findAlquilerWithHuespedesById(idAlquiler)
+                .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + idAlquiler));
+        if (alquiler.getEstado() != EstadoAlquiler.ACTIVO) {
+            throw new BadRequestException("Solo se pueden modificar alquileres activos.");
+        }
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(() -> new BadRequestException("Cliente no encontrado con id: " + idCliente));
+        boolean yaEsta = alquiler.getHuespedes().stream().anyMatch(h -> h.getId().equals(idCliente));
+        if (!yaEsta) {
+            alquiler.getHuespedes().add(cliente);
+            alquilerRepository.save(alquiler);
+        }
+        return mapearResponse(alquiler);
+    }
+
+    @Override
+    @Transactional
+    public AlquilerResponseDTO quitarHuesped(Long idAlquiler, Long idCliente) {
+        Alquiler alquiler = alquilerRepository.findAlquilerWithHuespedesById(idAlquiler)
+                .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + idAlquiler));
+        if (alquiler.getEstado() != EstadoAlquiler.ACTIVO) {
+            throw new BadRequestException("Solo se pueden modificar alquileres activos.");
+        }
+        if (alquiler.getCliente().getId().equals(idCliente)) {
+            throw new BadRequestException("No se puede quitar al representante principal del alquiler.");
+        }
+        alquiler.getHuespedes().removeIf(h -> h.getId().equals(idCliente));
+        alquilerRepository.save(alquiler);
+        return mapearResponse(alquiler);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AlquilerResponseDTO> reporteMensual(Long idHabitacion, int mes, int anio) {
+        List<Alquiler> lista = alquilerRepository.findByHabitacionIdAndMesAnio(idHabitacion, mes, anio);
+        Map<Long, BigDecimal> sumMap = buildSumMap(lista);
+        return lista.stream()
+                .map(a -> mapearResponse(a, sumMap))
+                .collect(Collectors.toList());
+    }
 }

@@ -16,4 +16,8 @@ public interface AlquilerService {
     AlquilerResponseDTO obtenerAlquilerPorId(Long id);
     AlquilerResponseDTO actualizarMontos(Long id, BigDecimal subTotal, BigDecimal pagoPendiente);
 
+    AlquilerResponseDTO agregarHuesped(Long idAlquiler, Long idCliente);
+    AlquilerResponseDTO quitarHuesped(Long idAlquiler, Long idCliente);
+    List<AlquilerResponseDTO> reporteMensual(Long idHabitacion, int mes, int anio);
+
 }

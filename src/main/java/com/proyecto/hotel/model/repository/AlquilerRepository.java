@@ -11,16 +11,15 @@ import org.springframework.stereotype.Repository;
 
 import com.proyecto.hotel.model.entities.Alquiler;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
-    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa"})
+    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa", "huespedes"})
     List<Alquiler> findByEstado(EstadoAlquiler estado);
 
-    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa"})
+    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa", "huespedes"})
     Optional<Alquiler> findAlquilerById(Long id);
 
     List<Alquiler> findByClienteId(Long clienteId);
@@ -31,9 +30,17 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
     int reasignarClientePorEstado(@Param("clienteId") Long clienteId,
                                  @Param("nuevoCliente") Cliente nuevoCliente,
                                  @Param("estado") EstadoAlquiler estado);
-    List<Alquiler> findByHabitacionId(Long habitacionId);
-    List<Alquiler> findByFechaIngresoBetween(LocalDateTime inicio, LocalDateTime fin);
-    List<Alquiler> findByEstadoAndFechaPrevistaBefore(EstadoAlquiler estado, LocalDateTime fecha);
     @Query("SELECT COUNT(a) FROM Alquiler a WHERE a.id = :alquilerId AND a.cliente.empresa IS NOT NULL")
     long countEmpresaAlquilerById(@Param("alquilerId") Long alquilerId);
+
+    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa", "huespedes"})
+    @Query("SELECT a FROM Alquiler a WHERE a.habitacion.id = :habitacionId " +
+           "AND YEAR(a.fechaIngreso) = :anio AND MONTH(a.fechaIngreso) = :mes " +
+           "ORDER BY a.fechaIngreso ASC")
+    List<Alquiler> findByHabitacionIdAndMesAnio(@Param("habitacionId") Long habitacionId,
+                                                 @Param("mes") int mes,
+                                                 @Param("anio") int anio);
+
+    @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa", "huespedes"})
+    Optional<Alquiler> findAlquilerWithHuespedesById(Long id);
 }

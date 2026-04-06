@@ -72,4 +72,32 @@ public class AlquilerController {
             @Valid @RequestBody ActualizarMontosAlquilerRequestDTO dto) {
         return ResponseEntity.ok(alquilerService.actualizarMontos(id, dto.subTotal(), dto.pagoPendiente()));
     }
+
+    @PostMapping("/{id}/huespedes/{clienteId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Agregar huésped a alquiler", description = "Agrega un cliente como huésped adicional a un alquiler activo")
+    public ResponseEntity<AlquilerResponseDTO> agregarHuesped(
+            @PathVariable Long id,
+            @PathVariable Long clienteId) {
+        return ResponseEntity.ok(alquilerService.agregarHuesped(id, clienteId));
+    }
+
+    @DeleteMapping("/{id}/huespedes/{clienteId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Quitar huésped de alquiler", description = "Elimina un huésped adicional de un alquiler activo")
+    public ResponseEntity<AlquilerResponseDTO> quitarHuesped(
+            @PathVariable Long id,
+            @PathVariable Long clienteId) {
+        return ResponseEntity.ok(alquilerService.quitarHuesped(id, clienteId));
+    }
+
+    @GetMapping("/reporte-mensual")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @Operation(summary = "Reporte mensual de habitación", description = "Lista los alquileres de una habitación en un mes y año específico")
+    public ResponseEntity<List<AlquilerResponseDTO>> reporteMensual(
+            @RequestParam Long habitacionId,
+            @RequestParam int mes,
+            @RequestParam int anio) {
+        return ResponseEntity.ok(alquilerService.reporteMensual(habitacionId, mes, anio));
+    }
 }

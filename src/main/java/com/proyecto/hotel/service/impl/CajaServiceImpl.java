@@ -27,6 +27,7 @@ public class CajaServiceImpl implements CajaService {
     private final UsuarioRepository usuarioRepository;
     private final MovimientoCajaRepository cajaRepository;
 
+    @Override
     @Transactional
     public MovimientoCajaResponseDTO registrarMovimiento(GastoRequestDTO dto, TipoMovimiento tipo, String dniUsuario) {
         // 1. El Observador: Quién está operando la caja
@@ -168,5 +169,26 @@ public class CajaServiceImpl implements CajaService {
         movimiento.setTipo(TipoMovimiento.INGRESO);
         movimiento.setMetodoPago(metodoPago);
         return mapToResponseDTO(cajaRepository.save(movimiento));
+    }
+
+    @Override
+    @Transactional
+    public List<MovimientoCajaResponseDTO> cobrarLoteEmpresa(Long empresaId, java.time.LocalDate desde, java.time.LocalDate hasta, com.proyecto.hotel.model.enums.MetodoPago metodoPago) {
+        if (hasta.isBefore(desde)) {
+            throw new com.proyecto.hotel.handler.BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
+        }
+        LocalDateTime inicio = desde.atStartOfDay();
+        LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
+        List<MovimientoCaja> pendientes = cajaRepository.findPendientesByEmpresaIdAndFechaBetween(empresaId, inicio, fin);
+        if (pendientes.isEmpty()) {
+            throw new com.proyecto.hotel.handler.BadRequestException("No hay movimientos pendientes para esta empresa en el período indicado");
+        }
+        for (MovimientoCaja m : pendientes) {
+            m.setTipo(TipoMovimiento.INGRESO);
+            m.setMetodoPago(metodoPago);
+        }
+        return cajaRepository.saveAll(pendientes).stream()
+                .map(this::mapToResponseDTO)
+                .toList();
     }
 }

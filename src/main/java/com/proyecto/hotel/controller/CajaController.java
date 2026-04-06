@@ -94,4 +94,15 @@ public class CajaController {
             @RequestParam MetodoPago metodoPago) {
         return ResponseEntity.ok(cajaService.cobrarMovimiento(id, metodoPago));
     }
+
+    @PostMapping("/cobrar-lote-empresa")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Cobrar lote empresa", description = "Marca como INGRESO todos los movimientos PENDIENTE de una empresa en un período")
+    public ResponseEntity<java.util.List<MovimientoCajaResponseDTO>> cobrarLoteEmpresa(
+            @RequestParam Long empresaId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate desde,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate hasta,
+            @RequestParam MetodoPago metodoPago) {
+        return ResponseEntity.ok(cajaService.cobrarLoteEmpresa(empresaId, desde, hasta, metodoPago));
+    }
 }

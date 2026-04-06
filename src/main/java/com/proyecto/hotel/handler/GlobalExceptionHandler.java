@@ -227,6 +227,8 @@ public class GlobalExceptionHandler {
         if (causa != null && causa.contains("Duplicate entry")) {
             String valor = causa.substring(causa.indexOf("'") + 1, causa.indexOf("'", causa.indexOf("'") + 1));
             mensaje = "Ya existe un registro con el valor '" + valor + "'";
+        } else if (causa != null && causa.toLowerCase().contains("foreign key constraint")) {
+            mensaje = "No se puede eliminar porque tiene registros relacionados";
         }
         ApiError error = ApiError.builder()
                 .timestamp(LocalDateTime.now())

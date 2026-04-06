@@ -10,6 +10,5 @@ import java.util.List;
 @Repository
 public interface CuentaAlquilerRepository extends JpaRepository<CuentaAlquiler, Long> {
     List<CuentaAlquiler> findByAlquilerId(Long alquilerId);
-    List<CuentaAlquiler> findByEstado(EstadoCuenta estado);
     List<CuentaAlquiler> findByAlquilerIdAndEstado(Long alquilerId, EstadoCuenta estado);
 }

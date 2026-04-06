@@ -2,6 +2,7 @@ package com.proyecto.hotel.controller.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record AlquilerResponseDTO(
     Long id,
@@ -14,6 +15,8 @@ public record AlquilerResponseDTO(
     BigDecimal pagoPendiente,
     LocalDateTime fechaIngreso,
     LocalDateTime fechaPrevista,
+    LocalDateTime fechaSalida,
     String estadoAlquiler,
-    String estadoHabitacion
+    String estadoHabitacion,
+    List<String> huespedes
 ) {}
