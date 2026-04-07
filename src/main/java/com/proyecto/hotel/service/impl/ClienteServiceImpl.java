@@ -117,6 +117,7 @@ public class ClienteServiceImpl implements ClienteService {
             alquilerRepository.reasignarClientePorEstado(id, placeholder, EstadoAlquiler.FINALIZADO);
         }
 
+        alquilerRepository.eliminarHuespedPorClienteId(id);
         clienteRepository.deleteById(id);
     }
 
