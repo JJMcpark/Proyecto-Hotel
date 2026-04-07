@@ -314,7 +314,6 @@ public class AlquilerServiceImpl implements AlquilerService {
     @Transactional(readOnly = true)
     public Map<String, Object> previsualizarEliminacionHistorial(java.time.LocalDate desde, java.time.LocalDate hasta) {
         long cantidad;
-        BigDecimal totalSubTotal;
         String periodoDesc;
 
         if (desde != null && hasta != null) {
@@ -322,18 +321,14 @@ public class AlquilerServiceImpl implements AlquilerService {
             LocalDateTime inicio = desde.atStartOfDay();
             LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
             cantidad = alquilerRepository.countByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
-            totalSubTotal = alquilerRepository.sumSubTotalByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
             periodoDesc = desde + " — " + hasta;
         } else {
             cantidad = alquilerRepository.countByEstado(EstadoAlquiler.FINALIZADO);
-            totalSubTotal = alquilerRepository.sumSubTotalByEstado(EstadoAlquiler.FINALIZADO);
             periodoDesc = "TODO el historial";
         }
-        if (totalSubTotal == null) totalSubTotal = BigDecimal.ZERO;
 
         return Map.of(
             "cantidad", cantidad,
-            "totalSubTotal", totalSubTotal,
             "periodo", periodoDesc
         );
     }
