@@ -40,6 +40,10 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     @Query("UPDATE MovimientoCaja m SET m.alquiler = null WHERE m.alquiler IS NOT NULL AND m.alquiler.id IN (SELECT a.id FROM Alquiler a WHERE a.cliente.id = :clienteId AND a.estado = :estado)")
     int desvincularAlquilerPorClienteId(@Param("clienteId") Long clienteId, @Param("estado") EstadoAlquiler estado);
 
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE MovimientoCaja m SET m.alquiler = null WHERE m.alquiler IS NOT NULL AND m.alquiler.id IN :ids")
+    int desvincularAlquileresPorIds(@Param("ids") java.util.List<Long> ids);
+
     @Modifying
     @Query("DELETE FROM MovimientoCaja m")
     int deleteAllMovimientos();

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.proyecto.hotel.model.entities.Alquiler;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,4 +58,28 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Alquiler a WHERE a.cliente.id = :clienteId AND a.estado = :estado")
     int eliminarPorClienteIdYEstado(@Param("clienteId") Long clienteId, @Param("estado") EstadoAlquiler estado);
+
+    long countByEstado(EstadoAlquiler estado);
+
+    long countByEstadoAndFechaIngresoBetween(EstadoAlquiler estado, LocalDateTime desde, LocalDateTime hasta);
+
+    @Query("SELECT COALESCE(SUM(a.subTotal), 0) FROM Alquiler a WHERE a.estado = :estado")
+    java.math.BigDecimal sumSubTotalByEstado(@Param("estado") EstadoAlquiler estado);
+
+    @Query("SELECT COALESCE(SUM(a.subTotal), 0) FROM Alquiler a WHERE a.estado = :estado AND a.fechaIngreso BETWEEN :desde AND :hasta")
+    java.math.BigDecimal sumSubTotalByEstadoAndFechaIngresoBetween(@Param("estado") EstadoAlquiler estado, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alquiler a WHERE a.estado = :estado")
+    int deleteByEstado(@Param("estado") EstadoAlquiler estado);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alquiler a WHERE a.estado = :estado AND a.fechaIngreso BETWEEN :desde AND :hasta")
+    int deleteByEstadoAndFechaIngresoBetween(@Param("estado") EstadoAlquiler estado, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    @Query("SELECT a.id FROM Alquiler a WHERE a.estado = :estado")
+    List<Long> findIdsByEstado(@Param("estado") EstadoAlquiler estado);
+
+    @Query("SELECT a.id FROM Alquiler a WHERE a.estado = :estado AND a.fechaIngreso BETWEEN :desde AND :hasta")
+    List<Long> findIdsByEstadoAndFechaIngresoBetween(@Param("estado") EstadoAlquiler estado, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 }

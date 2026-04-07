@@ -309,4 +309,67 @@ public class AlquilerServiceImpl implements AlquilerService {
                 .map(a -> mapearResponse(a, sumMap))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> previsualizarEliminacionHistorial(java.time.LocalDate desde, java.time.LocalDate hasta) {
+        long cantidad;
+        BigDecimal totalSubTotal;
+        String periodoDesc;
+
+        if (desde != null && hasta != null) {
+            if (hasta.isBefore(desde)) throw new BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
+            LocalDateTime inicio = desde.atStartOfDay();
+            LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
+            cantidad = alquilerRepository.countByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
+            totalSubTotal = alquilerRepository.sumSubTotalByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
+            periodoDesc = desde + " — " + hasta;
+        } else {
+            cantidad = alquilerRepository.countByEstado(EstadoAlquiler.FINALIZADO);
+            totalSubTotal = alquilerRepository.sumSubTotalByEstado(EstadoAlquiler.FINALIZADO);
+            periodoDesc = "TODO el historial";
+        }
+        if (totalSubTotal == null) totalSubTotal = BigDecimal.ZERO;
+
+        return Map.of(
+            "cantidad", cantidad,
+            "totalSubTotal", totalSubTotal,
+            "periodo", periodoDesc
+        );
+    }
+
+    @Override
+    @Transactional
+    public int eliminarHistorial(java.time.LocalDate desde, java.time.LocalDate hasta, String adminDni) {
+        List<Long> ids;
+        String periodoDesc;
+
+        if (desde != null && hasta != null) {
+            if (hasta.isBefore(desde)) throw new BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
+            LocalDateTime inicio = desde.atStartOfDay();
+            LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
+            ids = alquilerRepository.findIdsByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
+            periodoDesc = desde + " — " + hasta;
+        } else {
+            ids = alquilerRepository.findIdsByEstado(EstadoAlquiler.FINALIZADO);
+            periodoDesc = "TODO";
+        }
+
+        if (ids.isEmpty()) return 0;
+
+        // desvincular movimientos de caja
+        cajaRepository.desvincularAlquileresPorIds(ids);
+
+        // eliminar alquileres (cuenta_alquiler y alquiler_cliente cascadean automáticamente)
+        int deleted;
+        if (desde != null && hasta != null) {
+            LocalDateTime inicio = desde.atStartOfDay();
+            LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
+            deleted = alquilerRepository.deleteByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
+        } else {
+            deleted = alquilerRepository.deleteByEstado(EstadoAlquiler.FINALIZADO);
+        }
+
+        return deleted;
+    }
 }

@@ -13,8 +13,11 @@ import com.proyecto.hotel.controller.request.ActualizarMontosAlquilerRequestDTO;
 import com.proyecto.hotel.controller.request.CheckInRequestDTO;
 import com.proyecto.hotel.controller.response.AlquilerResponseDTO;
 import com.proyecto.hotel.model.enums.MetodoPago;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recepcion/alquiler")
@@ -99,5 +102,28 @@ public class AlquilerController {
             @RequestParam int mes,
             @RequestParam int anio) {
         return ResponseEntity.ok(alquilerService.reporteMensual(habitacionId, mes, anio));
+    }
+
+    @GetMapping("/historial/preview-eliminacion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Preview de eliminación de historial", description = "Muestra cuántos alquileres finalizados se borrarían y su subtotal acumulado")
+    public ResponseEntity<Map<String, Object>> previewEliminacionHistorial(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(alquilerService.previsualizarEliminacionHistorial(desde, hasta));
+    }
+
+    @DeleteMapping("/historial")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Eliminar historial de alquileres", description = "Borra permanentemente alquileres finalizados. Sin parámetros = todo. Con desde/hasta = solo el rango")
+    public ResponseEntity<Map<String, Object>> eliminarHistorial(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+        int deleted = alquilerService.eliminarHistorial(desde, hasta, authentication.getName());
+        return ResponseEntity.ok(Map.of(
+            "message", "Alquileres finalizados eliminados",
+            "eliminados", deleted
+        ));
     }
 }
