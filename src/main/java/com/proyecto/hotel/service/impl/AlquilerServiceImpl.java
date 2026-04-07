@@ -110,9 +110,10 @@ public class AlquilerServiceImpl implements AlquilerService {
         habitacion.setEstado(EstadoHabitacion.OCUPADA);
         habitacionRepository.save(habitacion);
 
-        // 6. Registro en Caja si hubo pago
-        if (adelanto.compareTo(BigDecimal.ZERO) > 0 && dto.metodoPago() != null) {
-            registrarMovimientoCaja(adelanto, dto.metodoPago(), TipoMovimiento.INGRESO, guardado, usuario, "Check-in");
+        // 6. Registro en Caja si hubo pago (si no se indicó método, se asume EFECTIVO)
+        if (adelanto.compareTo(BigDecimal.ZERO) > 0) {
+            MetodoPago metodo = (dto.metodoPago() != null) ? dto.metodoPago() : MetodoPago.EFECTIVO;
+            registrarMovimientoCaja(adelanto, metodo, TipoMovimiento.INGRESO, guardado, usuario, "Check-in");
         }
 
         return mapearResponse(guardado);

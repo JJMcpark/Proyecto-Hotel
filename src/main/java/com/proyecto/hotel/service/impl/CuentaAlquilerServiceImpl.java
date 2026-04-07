@@ -57,9 +57,11 @@ public class CuentaAlquilerServiceImpl implements CuentaAlquilerService {
         cuenta.setAlquiler(alquiler);
         cuenta.setSubTotal(dto.getPrecioUnit().multiply(BigDecimal.valueOf(dto.getCantidad())));
 
-        // Sumar el cargo al pago pendiente del alquiler
-        alquiler.setPagoPendiente(alquiler.getPagoPendiente().add(cuenta.getSubTotal()));
-        alquilerRepository.save(alquiler);
+        // Solo sumar al pago pendiente si el cargo no está ya pagado
+        if (!EstadoCuenta.PAGADO.name().equals(dto.getEstado())) {
+            alquiler.setPagoPendiente(alquiler.getPagoPendiente().add(cuenta.getSubTotal()));
+            alquilerRepository.save(alquiler);
+        }
 
         return cuentaAlquilerMapper.toDTO(cuentaAlquilerRepository.save(cuenta));
     }
