@@ -13,5 +13,6 @@ public record MovimientoCajaResponseDTO(
     String nombreUsuario,
     String numeroHabitacion,
     String nombreCliente,
-    String nombreEmpresa
+    String nombreEmpresa,
+    Long alquilerId
 ) {}

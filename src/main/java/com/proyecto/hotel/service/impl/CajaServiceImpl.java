@@ -100,6 +100,8 @@ public class CajaServiceImpl implements CajaService {
             ? m.getAlquiler().getCliente().getEmpresa().getNombre()
             : "—";
 
+        Long alquilerId = (m.getAlquiler() != null) ? m.getAlquiler().getId() : null;
+
         return new MovimientoCajaResponseDTO(
             m.getId(),
             m.getTipo().name(),
@@ -110,7 +112,8 @@ public class CajaServiceImpl implements CajaService {
             m.getUsuario().getNombre(),
             habitacion,
             cliente,
-            empresa
+            empresa,
+            alquilerId
         );
     }
 
@@ -184,6 +187,25 @@ public class CajaServiceImpl implements CajaService {
         List<MovimientoCaja> pendientes = cajaRepository.findPendientesByEmpresaIdAndFechaBetween(empresaId, inicio, fin);
         if (pendientes.isEmpty()) {
             throw new com.proyecto.hotel.handler.BadRequestException("No hay movimientos pendientes para esta empresa en el período indicado");
+        }
+        for (MovimientoCaja m : pendientes) {
+            m.setTipo(TipoMovimiento.INGRESO);
+            m.setMetodoPago(metodoPago);
+        }
+        return cajaRepository.saveAll(pendientes).stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<MovimientoCajaResponseDTO> cobrarLoteEmpresaPorIds(List<Long> ids, com.proyecto.hotel.model.enums.MetodoPago metodoPago) {
+        if (ids == null || ids.isEmpty()) {
+            throw new com.proyecto.hotel.handler.BadRequestException("La lista de IDs no puede estar vacía");
+        }
+        List<MovimientoCaja> pendientes = cajaRepository.findPendientesByIdIn(ids);
+        if (pendientes.isEmpty()) {
+            throw new com.proyecto.hotel.handler.BadRequestException("No hay movimientos pendientes con los IDs indicados");
         }
         for (MovimientoCaja m : pendientes) {
             m.setTipo(TipoMovimiento.INGRESO);

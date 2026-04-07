@@ -130,19 +130,29 @@ public class AlquilerServiceImpl implements AlquilerService {
         alquiler.setFechaSalida(LocalDateTime.now());
         alquiler.setEstado(EstadoAlquiler.FINALIZADO);
 
-        // Marcar todos los cargos pendientes como PAGADO
-        List<CuentaAlquiler> cuentasPendientes = cuentaAlquilerRepository
-                .findByAlquilerIdAndEstado(idAlquiler, EstadoCuenta.PENDIENTE);
-        for (CuentaAlquiler cuenta : cuentasPendientes) {
-            cuenta.setEstado(EstadoCuenta.PAGADO);
-        }
-        cuentaAlquilerRepository.saveAll(cuentasPendientes);
+        boolean esEmpresa = alquiler.getEmpresa() != null;
 
-        if (alquiler.getPagoPendiente().compareTo(BigDecimal.ZERO) > 0) {
-            boolean esEmpresa = alquiler.getEmpresa() != null;
-            TipoMovimiento tipoMov = esEmpresa ? TipoMovimiento.PENDIENTE : TipoMovimiento.INGRESO;
-            MetodoPago metodo = esEmpresa ? null : metodoPago;
-            registrarMovimientoCaja(alquiler.getPagoPendiente(), metodo, tipoMov, alquiler, usuario, "Liquidación Check-out");
+        // Para clientes normales: marcar todos los cargos pendientes como PAGADO al hacer checkout.
+        // Para empresa: dejar los consumos en PENDIENTE para que el admin les asigne precio y cobre.
+        if (!esEmpresa) {
+            List<CuentaAlquiler> cuentasPendientes = cuentaAlquilerRepository
+                    .findByAlquilerIdAndEstado(idAlquiler, EstadoCuenta.PENDIENTE);
+            for (CuentaAlquiler cuenta : cuentasPendientes) {
+                cuenta.setEstado(EstadoCuenta.PAGADO);
+            }
+            cuentaAlquilerRepository.saveAll(cuentasPendientes);
+        }
+
+        if (esEmpresa) {
+            // Para empresa: siempre crear movimiento PENDIENTE (aunque pagoPendiente sea 0),
+            // así el admin siempre lo ve en Cuentas Empresa para asignar precios a consumos.
+            BigDecimal monto = alquiler.getPagoPendiente().compareTo(BigDecimal.ZERO) > 0
+                    ? alquiler.getPagoPendiente()
+                    : BigDecimal.ZERO;
+            registrarMovimientoCaja(monto, null, TipoMovimiento.PENDIENTE, alquiler, usuario, "Liquidación Check-out");
+            alquiler.setPagoPendiente(BigDecimal.ZERO);
+        } else if (alquiler.getPagoPendiente().compareTo(BigDecimal.ZERO) > 0) {
+            registrarMovimientoCaja(alquiler.getPagoPendiente(), metodoPago, TipoMovimiento.INGRESO, alquiler, usuario, "Liquidación Check-out");
             alquiler.setPagoPendiente(BigDecimal.ZERO);
         }
 

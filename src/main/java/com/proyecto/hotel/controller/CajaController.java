@@ -128,4 +128,13 @@ public class CajaController {
             @RequestParam MetodoPago metodoPago) {
         return ResponseEntity.ok(cajaService.cobrarLoteEmpresa(empresaId, desde, hasta, metodoPago));
     }
+
+    @PostMapping("/cobrar-lote-ids")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Cobrar lote por IDs", description = "Marca como INGRESO una lista específica de movimientos PENDIENTE identificados por sus IDs")
+    public ResponseEntity<java.util.List<MovimientoCajaResponseDTO>> cobrarLoteEmpresaPorIds(
+            @RequestBody java.util.List<Long> ids,
+            @RequestParam MetodoPago metodoPago) {
+        return ResponseEntity.ok(cajaService.cobrarLoteEmpresaPorIds(ids, metodoPago));
+    }
 }

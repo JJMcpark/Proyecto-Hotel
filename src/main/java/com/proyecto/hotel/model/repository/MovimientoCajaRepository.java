@@ -36,6 +36,10 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
             @Param("inicio") LocalDateTime inicio,
             @Param("fin") LocalDateTime fin);
 
+    @EntityGraph(attributePaths = {"usuario", "alquiler", "alquiler.habitacion", "alquiler.cliente", "alquiler.cliente.empresa"})
+    @Query("SELECT m FROM MovimientoCaja m WHERE m.id IN :ids AND m.tipo = com.proyecto.hotel.model.enums.TipoMovimiento.PENDIENTE")
+    List<MovimientoCaja> findPendientesByIdIn(@Param("ids") List<Long> ids);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE MovimientoCaja m SET m.alquiler = null WHERE m.alquiler IS NOT NULL AND m.alquiler.id IN (SELECT a.id FROM Alquiler a WHERE a.cliente.id = :clienteId AND a.estado = :estado)")
     int desvincularAlquilerPorClienteId(@Param("clienteId") Long clienteId, @Param("estado") EstadoAlquiler estado);
