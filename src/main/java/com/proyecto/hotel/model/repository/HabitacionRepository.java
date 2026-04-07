@@ -15,4 +15,6 @@ public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
 
     @EntityGraph(attributePaths = {"tipoHabitacion"})
     List<Habitacion> findByTipoHabitacionNombre(String tipo);
+
+    boolean existsByTipoHabitacionId(Long tipoHabitacionId);
 }

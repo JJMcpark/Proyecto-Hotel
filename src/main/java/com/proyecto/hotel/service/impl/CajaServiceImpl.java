@@ -19,7 +19,9 @@ import com.proyecto.hotel.model.repository.MovimientoCajaRepository;
 import com.proyecto.hotel.service.CajaService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CajaServiceImpl implements CajaService {
@@ -190,5 +192,65 @@ public class CajaServiceImpl implements CajaService {
         return cajaRepository.saveAll(pendientes).stream()
                 .map(this::mapToResponseDTO)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> previsualizarEliminacion(java.time.LocalDate desde, java.time.LocalDate hasta) {
+        long cantidad;
+        String periodoDesc;
+
+        BigDecimal totalIngresos;
+        BigDecimal totalEgresos;
+
+        if (desde != null && hasta != null) {
+            if (hasta.isBefore(desde)) {
+                throw new com.proyecto.hotel.handler.BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
+            }
+            LocalDateTime inicio = desde.atStartOfDay();
+            LocalDateTime fin = hasta.atTime(LocalTime.MAX);
+            cantidad = cajaRepository.countByFechaBetween(inicio, fin);
+            totalIngresos = cajaRepository.sumIngresosByFechaBetween(inicio, fin);
+            totalEgresos  = cajaRepository.sumEgresosByFechaBetween(inicio, fin);
+            periodoDesc = desde + " — " + hasta;
+        } else {
+            cantidad = cajaRepository.count();
+            totalIngresos = cajaRepository.sumIngresosAll();
+            totalEgresos  = cajaRepository.sumEgresosAll();
+            periodoDesc = "TODO el historial";
+        }
+
+        if (totalIngresos == null) totalIngresos = BigDecimal.ZERO;
+        if (totalEgresos  == null) totalEgresos  = BigDecimal.ZERO;
+
+        return java.util.Map.of(
+            "cantidad", cantidad,
+            "totalIngresos", totalIngresos,
+            "totalEgresos", totalEgresos,
+            "periodo", periodoDesc
+        );
+    }
+
+    @Override
+    @Transactional
+    public int eliminarMovimientos(java.time.LocalDate desde, java.time.LocalDate hasta, String adminDni) {
+        int deleted;
+        String periodoDesc;
+
+        if (desde != null && hasta != null) {
+            if (hasta.isBefore(desde)) {
+                throw new com.proyecto.hotel.handler.BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
+            }
+            LocalDateTime inicio = desde.atStartOfDay();
+            LocalDateTime fin = hasta.atTime(LocalTime.MAX);
+            deleted = cajaRepository.deleteByFechaBetween(inicio, fin);
+            periodoDesc = desde + " — " + hasta;
+        } else {
+            deleted = cajaRepository.deleteAllMovimientos();
+            periodoDesc = "TODO";
+        }
+
+        log.warn("AUDIT: admin='{}' eliminó movimientos de caja. Período: {}. Registros borrados: {}", adminDni, periodoDesc, deleted);
+        return deleted;
     }
 }

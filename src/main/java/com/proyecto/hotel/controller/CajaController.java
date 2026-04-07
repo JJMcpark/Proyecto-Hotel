@@ -95,6 +95,29 @@ public class CajaController {
         return ResponseEntity.ok(cajaService.cobrarMovimiento(id, metodoPago));
     }
 
+    @GetMapping("/preview-eliminacion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Preview de eliminación de movimientos", description = "Muestra cuántos movimientos se borrarían y sus totales. Sin parámetros = preview de todo")
+    public ResponseEntity<java.util.Map<String, Object>> previewEliminacion(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(cajaService.previsualizarEliminacion(desde, hasta));
+    }
+
+    @DeleteMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Eliminar movimientos de caja", description = "Borra permanentemente registros de caja. Sin parámetros = elimina todo. Con desde/hasta = solo el rango. Acción irreversible")
+    public ResponseEntity<java.util.Map<String, Object>> eliminarMovimientos(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+        int deleted = cajaService.eliminarMovimientos(desde, hasta, authentication.getName());
+        return ResponseEntity.ok(java.util.Map.of(
+            "message", "Movimientos de caja eliminados",
+            "eliminados", deleted
+        ));
+    }
+
     @PostMapping("/cobrar-lote-empresa")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Cobrar lote empresa", description = "Marca como INGRESO todos los movimientos PENDIENTE de una empresa en un período")

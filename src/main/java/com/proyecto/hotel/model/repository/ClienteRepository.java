@@ -12,4 +12,9 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     boolean existsByNumDocumento(String numDocumento);
     boolean existsByNumDocumentoAndIdNot(String numDocumento, Long id);
     boolean existsByEmpresaId(Long empresaId);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("UPDATE Cliente c SET c.empresa = :nueva WHERE c.empresa.id = :oldId")
+    int reasignarEmpresa(@org.springframework.data.repository.query.Param("oldId") Long oldId,
+                         @org.springframework.data.repository.query.Param("nueva") com.proyecto.hotel.model.entities.Empresa nueva);
 }

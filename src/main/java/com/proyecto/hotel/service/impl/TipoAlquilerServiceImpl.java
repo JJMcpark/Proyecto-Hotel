@@ -4,6 +4,7 @@ import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.TipoAlquilerDTO;
 import com.proyecto.hotel.model.entities.TipoAlquiler;
 import com.proyecto.hotel.model.mapper.TipoAlquilerMapper;
+import com.proyecto.hotel.model.repository.TarifaRepository;
 import com.proyecto.hotel.model.repository.TipoAlquilerRepository;
 import com.proyecto.hotel.service.TipoAlquilerService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public class TipoAlquilerServiceImpl implements TipoAlquilerService {
 
     private final TipoAlquilerRepository tipoAlquilerRepository;
+    private final TarifaRepository tarifaRepository;
     private final TipoAlquilerMapper tipoAlquilerMapper;
 
     @Override
@@ -57,6 +59,10 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     @Override
     @Transactional
     public void eliminarTipoAlquiler(Long id) {
+        if (!tipoAlquilerRepository.existsById(id)) {
+            throw new BadRequestException("Tipo de alquiler no encontrado con id: " + id);
+        }
+        tarifaRepository.deleteByTipoAlquilerId(id);
         tipoAlquilerRepository.deleteById(id);
     }
 }

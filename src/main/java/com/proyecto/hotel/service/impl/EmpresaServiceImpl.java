@@ -3,7 +3,9 @@ package com.proyecto.hotel.service.impl;
 import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.EmpresaDTO;
 import com.proyecto.hotel.model.entities.Empresa;
+import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import com.proyecto.hotel.model.mapper.EmpresaMapper;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.ClienteRepository;
 import com.proyecto.hotel.model.repository.EmpresaRepository;
 import com.proyecto.hotel.service.EmpresaService;
@@ -18,14 +20,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EmpresaServiceImpl implements EmpresaService {
 
+    private static final String EMPRESA_PLACEHOLDER_RUC = "00000000000";
+
     private final EmpresaRepository empresaRepository;
     private final ClienteRepository clienteRepository;
+    private final AlquilerRepository alquilerRepository;
     private final EmpresaMapper empresaMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<EmpresaDTO> obtenerTodasLasEmpresas() {
         return empresaRepository.findAll().stream()
+                .filter(e -> !EMPRESA_PLACEHOLDER_RUC.equals(e.getRuc()))
                 .map(empresaMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -53,6 +59,9 @@ public class EmpresaServiceImpl implements EmpresaService {
     public EmpresaDTO actualizarEmpresa(Long id, EmpresaDTO empresaDTO) {
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Empresa no encontrada con id: " + id));
+        if (EMPRESA_PLACEHOLDER_RUC.equals(empresa.getRuc())) {
+            throw new BadRequestException("No se puede modificar la empresa placeholder del sistema");
+        }
         empresaMapper.updateEntityFromDTO(empresaDTO, empresa);
         return empresaMapper.toDTO(empresaRepository.save(empresa));
     }
@@ -60,12 +69,32 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional
     public void eliminarEmpresa(Long id) {
-        if (!empresaRepository.existsById(id)) {
-            throw new BadRequestException("Empresa no encontrada con id: " + id);
+        Empresa empresa = empresaRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Empresa no encontrada con id: " + id));
+
+        if (EMPRESA_PLACEHOLDER_RUC.equals(empresa.getRuc())) {
+            throw new BadRequestException("No se puede eliminar la empresa placeholder del sistema");
         }
-        if (clienteRepository.existsByEmpresaId(id)) {
-            throw new BadRequestException("No se puede eliminar la empresa porque tiene clientes asociados.");
+
+        if (alquilerRepository.existsByEmpresaIdAndEstado(id, EstadoAlquiler.ACTIVO)) {
+            throw new BadRequestException("No se puede eliminar la empresa porque tiene alquileres activos asociados");
         }
+
+        Empresa placeholder = obtenerOcrearEmpresaPlaceholder();
+        alquilerRepository.reasignarEmpresa(id, placeholder);
+        clienteRepository.reasignarEmpresa(id, placeholder);
+
         empresaRepository.deleteById(id);
+    }
+
+    private Empresa obtenerOcrearEmpresaPlaceholder() {
+        return empresaRepository.findByRuc(EMPRESA_PLACEHOLDER_RUC).orElseGet(() -> {
+            Empresa placeholder = Empresa.builder()
+                    .nombre("EMPRESA ELIMINADA")
+                    .ruc(EMPRESA_PLACEHOLDER_RUC)
+                    .telefono(null)
+                    .build();
+            return empresaRepository.save(placeholder);
+        });
     }
 }

@@ -18,4 +18,6 @@ public interface CajaService {
     MovimientoCajaResponseDTO actualizarMonto(Long id, java.math.BigDecimal monto);
     MovimientoCajaResponseDTO cobrarMovimiento(Long id, MetodoPago metodoPago);
     List<MovimientoCajaResponseDTO> cobrarLoteEmpresa(Long empresaId, LocalDate desde, LocalDate hasta, MetodoPago metodoPago);
+    java.util.Map<String, Object> previsualizarEliminacion(LocalDate desde, LocalDate hasta);
+    int eliminarMovimientos(LocalDate desde, LocalDate hasta, String adminDni);
 }

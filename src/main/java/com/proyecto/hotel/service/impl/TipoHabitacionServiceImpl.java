@@ -4,6 +4,8 @@ import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.TipoHabitacionDTO;
 import com.proyecto.hotel.model.entities.TipoHabitacion;
 import com.proyecto.hotel.model.mapper.TipoHabitacionMapper;
+import com.proyecto.hotel.model.repository.HabitacionRepository;
+import com.proyecto.hotel.model.repository.TarifaRepository;
 import com.proyecto.hotel.model.repository.TipoHabitacionRepository;
 import com.proyecto.hotel.service.TipoHabitacionService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 public class TipoHabitacionServiceImpl implements TipoHabitacionService {
 
     private final TipoHabitacionRepository tipoHabitacionRepository;
+    private final HabitacionRepository habitacionRepository;
+    private final TarifaRepository tarifaRepository;
     private final TipoHabitacionMapper tipoHabitacionMapper;
 
     @Override
@@ -57,6 +61,13 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     @Override
     @Transactional
     public void eliminarTipoHabitacion(Long id) {
+        if (!tipoHabitacionRepository.existsById(id)) {
+            throw new BadRequestException("Tipo de habitación no encontrado con id: " + id);
+        }
+        if (habitacionRepository.existsByTipoHabitacionId(id)) {
+            throw new BadRequestException("No se puede eliminar: hay habitaciones que usan este tipo de habitación");
+        }
+        tarifaRepository.deleteByTipoHabitacionId(id);
         tipoHabitacionRepository.deleteById(id);
     }
 }

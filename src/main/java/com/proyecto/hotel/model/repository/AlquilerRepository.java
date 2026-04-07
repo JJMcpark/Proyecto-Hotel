@@ -43,4 +43,10 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
 
     @EntityGraph(attributePaths = {"cliente", "habitacion", "tarifa", "usuario", "empresa", "huespedes"})
     Optional<Alquiler> findAlquilerWithHuespedesById(Long id);
+
+    boolean existsByEmpresaIdAndEstado(Long empresaId, EstadoAlquiler estado);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Alquiler a SET a.empresa = :nueva WHERE a.empresa.id = :oldId")
+    int reasignarEmpresa(@Param("oldId") Long oldId, @Param("nueva") com.proyecto.hotel.model.entities.Empresa nueva);
 }
