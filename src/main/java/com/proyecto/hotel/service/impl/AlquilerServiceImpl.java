@@ -190,10 +190,6 @@ public class AlquilerServiceImpl implements AlquilerService {
             throw new BadRequestException("Los montos no pueden ser negativos");
         }
 
-        if (pagoPendiente.compareTo(subTotal) > 0) {
-            throw new BadRequestException("El pago pendiente no puede superar el subtotal");
-        }
-
         if (alquiler.getCantTiempo() == null || alquiler.getCantTiempo() <= 0) {
             throw new BadRequestException("No se puede recalcular tarifa: cantidad de tiempo inválida");
         }
