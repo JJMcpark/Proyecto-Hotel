@@ -4,7 +4,6 @@ import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.ClienteDTO;
 import com.proyecto.hotel.model.entities.Cliente;
 import com.proyecto.hotel.model.entities.Empresa;
-import com.proyecto.hotel.model.entities.TipoDocumento;
 import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import com.proyecto.hotel.model.mapper.ClienteMapper;
 import com.proyecto.hotel.model.repository.AlquilerRepository;
