@@ -1,6 +1,7 @@
 package com.proyecto.hotel.model.repository;
 
 import com.proyecto.hotel.model.entities.MovimientoCaja;
+import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,6 +35,10 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
             @Param("empresaId") Long empresaId,
             @Param("inicio") LocalDateTime inicio,
             @Param("fin") LocalDateTime fin);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE MovimientoCaja m SET m.alquiler = null WHERE m.alquiler IS NOT NULL AND m.alquiler.id IN (SELECT a.id FROM Alquiler a WHERE a.cliente.id = :clienteId AND a.estado = :estado)")
+    int desvincularAlquilerPorClienteId(@Param("clienteId") Long clienteId, @Param("estado") EstadoAlquiler estado);
 
     @Modifying
     @Query("DELETE FROM MovimientoCaja m")

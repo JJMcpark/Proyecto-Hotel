@@ -53,4 +53,8 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
     @Modifying
     @Query(value = "DELETE FROM alquiler_cliente WHERE id_cliente = :clienteId", nativeQuery = true)
     int eliminarHuespedPorClienteId(@Param("clienteId") Long clienteId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alquiler a WHERE a.cliente.id = :clienteId AND a.estado = :estado")
+    int eliminarPorClienteIdYEstado(@Param("clienteId") Long clienteId, @Param("estado") EstadoAlquiler estado);
 }

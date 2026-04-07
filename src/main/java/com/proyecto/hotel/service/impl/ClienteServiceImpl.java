@@ -10,6 +10,7 @@ import com.proyecto.hotel.model.mapper.ClienteMapper;
 import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.ClienteRepository;
 import com.proyecto.hotel.model.repository.EmpresaRepository;
+import com.proyecto.hotel.model.repository.MovimientoCajaRepository;
 import com.proyecto.hotel.model.repository.TipoDocumentoRepository;
 import com.proyecto.hotel.service.ClienteService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class ClienteServiceImpl implements ClienteService {
     private final ClienteRepository clienteRepository;
     private final AlquilerRepository alquilerRepository;
     private final EmpresaRepository empresaRepository;
+    private final MovimientoCajaRepository movimientoCajaRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final ClienteMapper clienteMapper;
 
@@ -110,33 +112,12 @@ public class ClienteServiceImpl implements ClienteService {
 
         long historial = alquilerRepository.countByClienteIdAndEstado(id, EstadoAlquiler.FINALIZADO);
         if (historial > 0) {
-            Cliente placeholder = obtenerOcrearClientePlaceholder();
-            if (placeholder.getId().equals(id)) {
-                throw new BadRequestException("No se puede eliminar el cliente placeholder del sistema");
-            }
-            alquilerRepository.reasignarClientePorEstado(id, placeholder, EstadoAlquiler.FINALIZADO);
+            movimientoCajaRepository.desvincularAlquilerPorClienteId(id, EstadoAlquiler.FINALIZADO);
+            alquilerRepository.eliminarPorClienteIdYEstado(id, EstadoAlquiler.FINALIZADO);
         }
 
         alquilerRepository.eliminarHuespedPorClienteId(id);
         clienteRepository.deleteById(id);
-    }
-
-    private Cliente obtenerOcrearClientePlaceholder() {
-        return clienteRepository.findByNumDocumento(CLIENTE_PLACEHOLDER_DOC).orElseGet(() -> {
-            TipoDocumento tipoDocumento = tipoDocumentoRepository.findByNombre("DNI")
-                    .orElseGet(() -> tipoDocumentoRepository.findAll().stream().findFirst()
-                            .orElseThrow(() -> new BadRequestException("No hay tipos de documento configurados")));
-
-            Cliente placeholder = Cliente.builder()
-                    .nombre("CLIENTE ELIMINADO")
-                    .numDocumento(CLIENTE_PLACEHOLDER_DOC)
-                    .telefono(null)
-                    .tipoDocumento(tipoDocumento)
-                    .empresa(null)
-                    .build();
-
-            return clienteRepository.save(placeholder);
-        });
     }
 
     private void asignarEmpresa(Cliente cliente, Long empresaId) {
