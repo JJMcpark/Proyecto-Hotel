@@ -79,11 +79,12 @@ public class CajaController {
 
     @PatchMapping("/{id}/monto")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @Operation(summary = "Editar monto de movimiento", description = "Permite al administrador corregir el monto de un movimiento de caja")
+    @Operation(summary = "Editar monto de movimiento", description = "Permite al administrador corregir el monto y/o método de pago de un movimiento de caja")
     public ResponseEntity<MovimientoCajaResponseDTO> actualizarMonto(
             @PathVariable Long id,
-            @RequestParam java.math.BigDecimal monto) {
-        return ResponseEntity.ok(cajaService.actualizarMonto(id, monto));
+            @RequestParam java.math.BigDecimal monto,
+            @RequestParam(required = false) MetodoPago metodoPago) {
+        return ResponseEntity.ok(cajaService.actualizarMonto(id, monto, metodoPago));
     }
 
     @PatchMapping("/{id}/cobrar")

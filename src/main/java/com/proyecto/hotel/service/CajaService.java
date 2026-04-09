@@ -15,7 +15,7 @@ public interface CajaService {
     List<MovimientoCajaResponseDTO> listarMovimientosPorRango(LocalDate desde, LocalDate hasta);
     List<MovimientoCajaResponseDTO> listarMovimientosPorAlquiler(Long alquilerId);
     ResumenCajaDTO obtenerResumen(LocalDate desde, LocalDate hasta);
-    MovimientoCajaResponseDTO actualizarMonto(Long id, java.math.BigDecimal monto);
+    MovimientoCajaResponseDTO actualizarMonto(Long id, java.math.BigDecimal monto, MetodoPago metodoPago);
     MovimientoCajaResponseDTO cobrarMovimiento(Long id, MetodoPago metodoPago);
     List<MovimientoCajaResponseDTO> cobrarLoteEmpresa(Long empresaId, LocalDate desde, LocalDate hasta, MetodoPago metodoPago);
     List<MovimientoCajaResponseDTO> cobrarLoteEmpresaPorIds(List<Long> ids, MetodoPago metodoPago);
