@@ -5,6 +5,7 @@ import com.proyecto.hotel.model.dto.HabitacionDTO;
 import com.proyecto.hotel.model.entities.Habitacion;
 import com.proyecto.hotel.model.enums.EstadoHabitacion;
 import com.proyecto.hotel.model.mapper.HabitacionMapper;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.HabitacionRepository;
 import com.proyecto.hotel.service.HabitacionService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class HabitacionServiceImpl implements HabitacionService {
 
     private final HabitacionRepository habitacionRepository;
+    private final AlquilerRepository alquilerRepository;
     private final HabitacionMapper habitacionMapper;
 
     @Override
@@ -111,6 +113,12 @@ public class HabitacionServiceImpl implements HabitacionService {
     @Override
     @Transactional
     public void eliminarHabitacion(Long id) {
+        if (!habitacionRepository.existsById(id)) {
+            throw new BadRequestException("Habitación no encontrada con id: " + id);
+        }
+        if (alquilerRepository.existsByHabitacionId(id)) {
+            throw new BadRequestException("No se puede eliminar: la habitación tiene alquileres asociados");
+        }
         habitacionRepository.deleteById(id);
     }
 }

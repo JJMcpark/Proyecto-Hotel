@@ -45,10 +45,7 @@ public class CuentaAlquilerController {
             @PathVariable Long alquilerId,
             @Valid @RequestBody CuentaAlquilerDTO dto,
             Authentication authentication) {
-        boolean isRecepcionista = authentication.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
-        boolean alquilerEsEmpresa = alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0;
-        if (isRecepcionista && alquilerEsEmpresa) {
+        if (isRecepcionistaEmpresa(authentication, alquilerId)) {
             dto.setPrecioUnit(BigDecimal.ZERO);
         }
         return ResponseEntity.ok(cuentaAlquilerService.agregarCargo(alquilerId, dto));
@@ -74,8 +71,7 @@ public class CuentaAlquilerController {
                 .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
 
         if (isRecepcionista) {
-            boolean alquilerEsEmpresa = alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0;
-            if (alquilerEsEmpresa) {
+            if (alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0) {
                 throw new BadRequestException("No autorizado para marcar como pagado en clientes empresa");
             }
 
@@ -97,5 +93,11 @@ public class CuentaAlquilerController {
             Authentication authentication) {
         cuentaAlquilerService.eliminarCargo(id, authentication.getName());
         return ResponseEntity.ok(Map.of("message", "Cargo eliminado correctamente"));
+    }
+
+    private boolean isRecepcionistaEmpresa(Authentication auth, Long alquilerId) {
+        boolean isRecepcionista = auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_RECEPCIONISTA".equals(a.getAuthority()));
+        return isRecepcionista && alquilerRepository.countEmpresaAlquilerById(alquilerId) > 0;
     }
 }

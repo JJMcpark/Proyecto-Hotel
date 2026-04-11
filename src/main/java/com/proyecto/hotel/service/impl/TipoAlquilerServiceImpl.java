@@ -3,7 +3,9 @@ package com.proyecto.hotel.service.impl;
 import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.TipoAlquilerDTO;
 import com.proyecto.hotel.model.entities.TipoAlquiler;
+import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import com.proyecto.hotel.model.mapper.TipoAlquilerMapper;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.TarifaRepository;
 import com.proyecto.hotel.model.repository.TipoAlquilerRepository;
 import com.proyecto.hotel.service.TipoAlquilerService;
@@ -20,6 +22,7 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
 
     private final TipoAlquilerRepository tipoAlquilerRepository;
     private final TarifaRepository tarifaRepository;
+    private final AlquilerRepository alquilerRepository;
     private final TipoAlquilerMapper tipoAlquilerMapper;
 
     @Override
@@ -61,6 +64,9 @@ public class TipoAlquilerServiceImpl implements TipoAlquilerService {
     public void eliminarTipoAlquiler(Long id) {
         if (!tipoAlquilerRepository.existsById(id)) {
             throw new BadRequestException("Tipo de alquiler no encontrado con id: " + id);
+        }
+        if (alquilerRepository.existsByTarifa_TipoAlquilerIdAndEstado(id, EstadoAlquiler.ACTIVO)) {
+            throw new BadRequestException("No se puede eliminar: hay alquileres activos que usan tarifas de este tipo");
         }
         tarifaRepository.deleteByTipoAlquilerId(id);
         tipoAlquilerRepository.deleteById(id);

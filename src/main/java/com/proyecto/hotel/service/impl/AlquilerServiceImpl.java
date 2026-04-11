@@ -196,6 +196,10 @@ public class AlquilerServiceImpl implements AlquilerService {
         Alquiler alquiler = alquilerRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + id));
 
+        if (alquiler.getEstado() != EstadoAlquiler.ACTIVO && alquiler.getEstado() != EstadoAlquiler.FINALIZADO) {
+            throw new BadRequestException("Solo se pueden modificar alquileres activos o finalizados.");
+        }
+
         if (subTotal.compareTo(BigDecimal.ZERO) < 0 || pagoPendiente.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("Los montos no pueden ser negativos");
         }
@@ -241,9 +245,11 @@ public class AlquilerServiceImpl implements AlquilerService {
     BigDecimal totalPagadoCaja = (sumMap != null)
         ? sumMap.getOrDefault(a.getId(), BigDecimal.ZERO)
         : cajaRepository.sumNetByAlquilerId(a.getId());
-    String empresaNombre = (a.getCliente() != null && a.getCliente().getEmpresa() != null)
-        ? a.getCliente().getEmpresa().getNombre()
-        : (a.getEmpresa() != null ? a.getEmpresa().getNombre() : "—");
+    String empresaNombre = (a.getEmpresa() != null)
+        ? a.getEmpresa().getNombre()
+        : (a.getCliente() != null && a.getCliente().getEmpresa() != null)
+            ? a.getCliente().getEmpresa().getNombre()
+            : "—";
     
     // Si la fecha de ingreso es null (porque aún no se refrescó de la DB), usamos la actual
     LocalDateTime fechaInicio = (a.getFechaIngreso() != null) ? a.getFechaIngreso() : LocalDateTime.now();

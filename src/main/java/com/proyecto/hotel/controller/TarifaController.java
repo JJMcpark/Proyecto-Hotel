@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +25,7 @@ public class TarifaController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Listar tarifas", description = "Devuelve todas las tarifas configuradas")
-    public ResponseEntity<List<TarifaDTO>> obtenerTodasLasTarifas(Authentication auth) {
+    public ResponseEntity<List<TarifaDTO>> obtenerTodasLasTarifas() {
         List<TarifaDTO> tarifas = tarifaService.obtenerTodasLasTarifas();
         return ResponseEntity.ok(tarifas);
     }
@@ -34,7 +33,7 @@ public class TarifaController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Obtener tarifa por id", description = "Consulta una tarifa específica")
-    public ResponseEntity<TarifaDTO> obtenerTarifaPorId(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<TarifaDTO> obtenerTarifaPorId(@PathVariable Long id) {
         TarifaDTO tarifa = tarifaService.obtenerTarifaPorId(id);
         return ResponseEntity.ok(tarifa);
     }
@@ -42,7 +41,7 @@ public class TarifaController {
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Crear tarifa", description = "Registra una nueva tarifa. Acción reservada para administrador")
-    public ResponseEntity<TarifaDTO> crearTarifa(@Valid @RequestBody TarifaDTO tarifaDTO, Authentication auth) {
+    public ResponseEntity<TarifaDTO> crearTarifa(@Valid @RequestBody TarifaDTO tarifaDTO) {
         TarifaDTO tarifa = tarifaService.crearTarifa(tarifaDTO);
         return ResponseEntity.ok(tarifa);
     }
@@ -50,7 +49,7 @@ public class TarifaController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Actualizar tarifa", description = "Actualiza una tarifa existente. Acción reservada para administrador")
-    public ResponseEntity<TarifaDTO> actualizarTarifa(@PathVariable Long id, @Valid @RequestBody TarifaDTO tarifaDTO, Authentication auth) {
+    public ResponseEntity<TarifaDTO> actualizarTarifa(@PathVariable Long id, @Valid @RequestBody TarifaDTO tarifaDTO) {
         TarifaDTO tarifa = tarifaService.actualizarTarifa(id, tarifaDTO);
         return ResponseEntity.ok(tarifa);
     }
@@ -65,7 +64,7 @@ public class TarifaController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Eliminar tarifa", description = "Elimina una tarifa. Acción reservada para administrador")
-    public ResponseEntity<Map<String, String>> eliminarTarifa(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> eliminarTarifa(@PathVariable Long id) {
         tarifaService.eliminarTarifa(id);
         return ResponseEntity.ok(Map.of("message", "Tarifa eliminada correctamente"));
     }

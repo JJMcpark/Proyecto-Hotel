@@ -51,6 +51,11 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
     @Query("UPDATE Alquiler a SET a.empresa = :nueva WHERE a.empresa.id = :oldId")
     int reasignarEmpresa(@Param("oldId") Long oldId, @Param("nueva") com.proyecto.hotel.model.entities.Empresa nueva);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE alquiler SET id_empresa = :empresaId WHERE id_cliente = :clienteId AND estado = 'ACTIVO'", nativeQuery = true)
+    int actualizarEmpresaEnAlquileresActivos(@Param("clienteId") Long clienteId,
+                                              @Param("empresaId") Long empresaId);
+
     @Modifying
     @Query(value = "DELETE FROM alquiler_cliente WHERE id_cliente = :clienteId", nativeQuery = true)
     int eliminarHuespedPorClienteId(@Param("clienteId") Long clienteId);
@@ -76,4 +81,12 @@ public interface AlquilerRepository extends JpaRepository<Alquiler, Long> {
 
     @Query("SELECT a.id FROM Alquiler a WHERE a.estado = :estado AND a.fechaIngreso BETWEEN :desde AND :hasta")
     List<Long> findIdsByEstadoAndFechaIngresoBetween(@Param("estado") EstadoAlquiler estado, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    boolean existsByHabitacionId(Long habitacionId);
+
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Alquiler a WHERE a.tarifa.tipoAlquiler.id = :tipoAlquilerId AND a.estado = :estado")
+    boolean existsByTarifa_TipoAlquilerIdAndEstado(@Param("tipoAlquilerId") Long tipoAlquilerId, @Param("estado") EstadoAlquiler estado);
+
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Alquiler a WHERE a.tarifa.tipoHabitacion.id = :tipoHabitacionId AND a.estado = :estado")
+    boolean existsByTarifa_TipoHabitacionIdAndEstado(@Param("tipoHabitacionId") Long tipoHabitacionId, @Param("estado") EstadoAlquiler estado);
 }

@@ -3,7 +3,9 @@ package com.proyecto.hotel.service.impl;
 import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.TipoHabitacionDTO;
 import com.proyecto.hotel.model.entities.TipoHabitacion;
+import com.proyecto.hotel.model.enums.EstadoAlquiler;
 import com.proyecto.hotel.model.mapper.TipoHabitacionMapper;
+import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.HabitacionRepository;
 import com.proyecto.hotel.model.repository.TarifaRepository;
 import com.proyecto.hotel.model.repository.TipoHabitacionRepository;
@@ -22,6 +24,7 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
     private final TipoHabitacionRepository tipoHabitacionRepository;
     private final HabitacionRepository habitacionRepository;
     private final TarifaRepository tarifaRepository;
+    private final AlquilerRepository alquilerRepository;
     private final TipoHabitacionMapper tipoHabitacionMapper;
 
     @Override
@@ -66,6 +69,9 @@ public class TipoHabitacionServiceImpl implements TipoHabitacionService {
         }
         if (habitacionRepository.existsByTipoHabitacionId(id)) {
             throw new BadRequestException("No se puede eliminar: hay habitaciones que usan este tipo de habitación");
+        }
+        if (alquilerRepository.existsByTarifa_TipoHabitacionIdAndEstado(id, EstadoAlquiler.ACTIVO)) {
+            throw new BadRequestException("No se puede eliminar: hay alquileres activos que usan tarifas de este tipo de habitación");
         }
         tarifaRepository.deleteByTipoHabitacionId(id);
         tipoHabitacionRepository.deleteById(id);

@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public class HabitacionController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Listar habitaciones", description = "Devuelve todas las habitaciones registradas")
-    public ResponseEntity<List<HabitacionDTO>> obtenerTodasLasHabitaciones(Authentication auth) {
+    public ResponseEntity<List<HabitacionDTO>> obtenerTodasLasHabitaciones() {
         List<HabitacionDTO> habitaciones = habitacionService.obtenerTodasLasHabitaciones();
         return ResponseEntity.ok(habitaciones);
     }
@@ -33,7 +32,7 @@ public class HabitacionController {
     @GetMapping("/disponibles")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Listar habitaciones disponibles", description = "Devuelve solo habitaciones en estado DISPONIBLE")
-    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesDisponibles(Authentication auth) {
+    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesDisponibles() {
         List<HabitacionDTO> habitaciones = habitacionService.obtenerHabitacionesDisponibles();
         return ResponseEntity.ok(habitaciones);
     }
@@ -41,7 +40,7 @@ public class HabitacionController {
     @GetMapping("/estado")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Filtrar por estado", description = "Busca habitaciones según su estado actual")
-    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesPorEstado(@RequestParam String estado, Authentication auth) {
+    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesPorEstado(@RequestParam String estado) {
         List<HabitacionDTO> habitaciones = habitacionService.obtenerHabitacionesPorEstado(estado);
         return ResponseEntity.ok(habitaciones);
     }
@@ -49,7 +48,7 @@ public class HabitacionController {
     @GetMapping("/tipo")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Filtrar por tipo", description = "Busca habitaciones según el tipo de habitación")
-    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesPorTipo(@RequestParam String tipo, Authentication auth) {
+    public ResponseEntity<List<HabitacionDTO>> obtenerHabitacionesPorTipo(@RequestParam String tipo) {
         List<HabitacionDTO> habitaciones = habitacionService.obtenerHabitacionesPorTipo(tipo);
         return ResponseEntity.ok(habitaciones);
     }
@@ -57,7 +56,7 @@ public class HabitacionController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Obtener habitación por id", description = "Consulta el detalle de una habitación específica")
-    public ResponseEntity<HabitacionDTO> obtenerHabitacionPorId(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<HabitacionDTO> obtenerHabitacionPorId(@PathVariable Long id) {
         HabitacionDTO habitacion = habitacionService.obtenerHabitacionPorId(id);
         return ResponseEntity.ok(habitacion);
     }
@@ -65,7 +64,7 @@ public class HabitacionController {
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Crear habitación", description = "Registra una nueva habitación. Acción reservada para administrador")
-    public ResponseEntity<HabitacionDTO> crearHabitacion(@Valid @RequestBody HabitacionDTO habitacionDTO, Authentication auth) {
+    public ResponseEntity<HabitacionDTO> crearHabitacion(@Valid @RequestBody HabitacionDTO habitacionDTO) {
         HabitacionDTO habitacion = habitacionService.crearHabitacion(habitacionDTO);
         return ResponseEntity.ok(habitacion);
     }
@@ -73,7 +72,7 @@ public class HabitacionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Actualizar habitación", description = "Actualiza los datos de una habitación. Acción reservada para administrador")
-    public ResponseEntity<HabitacionDTO> actualizarHabitacion(@PathVariable Long id, @Valid @RequestBody HabitacionDTO habitacionDTO, Authentication auth) {
+    public ResponseEntity<HabitacionDTO> actualizarHabitacion(@PathVariable Long id, @Valid @RequestBody HabitacionDTO habitacionDTO) {
         HabitacionDTO habitacion = habitacionService.actualizarHabitacion(id, habitacionDTO);
         return ResponseEntity.ok(habitacion);
     }
@@ -81,7 +80,7 @@ public class HabitacionController {
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Cambiar estado de habitación", description = "Cambia el estado de una habitación (DISPONIBLE, OCUPADA, LIMPIEZA, MANTENIMIENTO)")
-    public ResponseEntity<HabitacionDTO> cambiarEstado(@PathVariable Long id, @RequestParam String estado, Authentication auth) {
+    public ResponseEntity<HabitacionDTO> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
         HabitacionDTO habitacion = habitacionService.cambiarEstado(id, estado);
         return ResponseEntity.ok(habitacion);
     }
@@ -89,7 +88,7 @@ public class HabitacionController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Eliminar habitación", description = "Elimina una habitación. Acción reservada para administrador")
-    public ResponseEntity<Map<String, String>> eliminarHabitacion(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> eliminarHabitacion(@PathVariable Long id) {
         habitacionService.eliminarHabitacion(id);
         return ResponseEntity.ok(Map.of("message", "Habitación eliminada correctamente"));
     }

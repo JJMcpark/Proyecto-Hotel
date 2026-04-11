@@ -84,8 +84,10 @@ public class ClienteServiceImpl implements ClienteService {
         Long empresaSolicitadaId = clienteDTO.getEmpresaId();
         boolean empresaCambio = (empresaActualId == null && empresaSolicitadaId != null)
                 || (empresaActualId != null && !empresaActualId.equals(empresaSolicitadaId));
+        boolean empresaModificacionRestringida = empresaActualId != null
+                && !empresaActualId.equals(empresaSolicitadaId);
 
-        if (!permitirCambioEmpresa && empresaCambio) {
+        if (!permitirCambioEmpresa && empresaModificacionRestringida) {
             throw new BadRequestException("Solo el administrador puede cambiar la afiliación a empresa de un cliente");
         }
 
@@ -93,6 +95,9 @@ public class ClienteServiceImpl implements ClienteService {
         asignarTipoDocumento(cliente, clienteDTO);
         asignarEmpresa(cliente, clienteDTO.getEmpresaId());
         cliente = clienteRepository.save(cliente);
+        if (empresaCambio) {
+            alquilerRepository.actualizarEmpresaEnAlquileresActivos(id, clienteDTO.getEmpresaId());
+        }
         return clienteMapper.toDTO(clienteRepository.findById(cliente.getId()).orElseThrow());
     }
 

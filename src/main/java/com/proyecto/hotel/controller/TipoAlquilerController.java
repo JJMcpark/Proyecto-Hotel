@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public class TipoAlquilerController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Listar tipos de alquiler", description = "Devuelve los tipos de alquiler configurados")
-    public ResponseEntity<List<TipoAlquilerDTO>> obtenerTodosLosTiposAlquiler(Authentication auth) {
+    public ResponseEntity<List<TipoAlquilerDTO>> obtenerTodosLosTiposAlquiler() {
         List<TipoAlquilerDTO> tipos = tipoAlquilerService.obtenerTodosLosTiposAlquiler();
         return ResponseEntity.ok(tipos);
     }
@@ -33,7 +32,7 @@ public class TipoAlquilerController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
     @Operation(summary = "Obtener tipo de alquiler por id", description = "Consulta un tipo de alquiler específico")
-    public ResponseEntity<TipoAlquilerDTO> obtenerTipoAlquilerPorId(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<TipoAlquilerDTO> obtenerTipoAlquilerPorId(@PathVariable Long id) {
         TipoAlquilerDTO tipo = tipoAlquilerService.obtenerTipoAlquilerPorId(id);
         return ResponseEntity.ok(tipo);
     }
@@ -41,7 +40,7 @@ public class TipoAlquilerController {
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Crear tipo de alquiler", description = "Registra un nuevo tipo de alquiler. Acción reservada para administrador")
-    public ResponseEntity<TipoAlquilerDTO> crearTipoAlquiler(@Valid @RequestBody TipoAlquilerDTO tipoAlquilerDTO, Authentication auth) {
+    public ResponseEntity<TipoAlquilerDTO> crearTipoAlquiler(@Valid @RequestBody TipoAlquilerDTO tipoAlquilerDTO) {
         TipoAlquilerDTO tipo = tipoAlquilerService.crearTipoAlquiler(tipoAlquilerDTO);
         return ResponseEntity.ok(tipo);
     }
@@ -49,7 +48,7 @@ public class TipoAlquilerController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Actualizar tipo de alquiler", description = "Actualiza un tipo de alquiler existente. Acción reservada para administrador")
-    public ResponseEntity<TipoAlquilerDTO> actualizarTipoAlquiler(@PathVariable Long id, @Valid @RequestBody TipoAlquilerDTO tipoAlquilerDTO, Authentication auth) {
+    public ResponseEntity<TipoAlquilerDTO> actualizarTipoAlquiler(@PathVariable Long id, @Valid @RequestBody TipoAlquilerDTO tipoAlquilerDTO) {
         TipoAlquilerDTO tipo = tipoAlquilerService.actualizarTipoAlquiler(id, tipoAlquilerDTO);
         return ResponseEntity.ok(tipo);
     }
@@ -57,7 +56,7 @@ public class TipoAlquilerController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Eliminar tipo de alquiler", description = "Elimina un tipo de alquiler. Acción reservada para administrador")
-    public ResponseEntity<Map<String, String>> eliminarTipoAlquiler(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<Map<String, String>> eliminarTipoAlquiler(@PathVariable Long id) {
         tipoAlquilerService.eliminarTipoAlquiler(id);
         return ResponseEntity.ok(Map.of("message", "Tipo de alquiler eliminado correctamente"));
     }
