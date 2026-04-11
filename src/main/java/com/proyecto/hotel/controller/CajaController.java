@@ -28,7 +28,7 @@ public class CajaController {
     private final CajaService cajaService;
     
     @PostMapping("/egreso")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Registrar egreso", description = "Registra una salida de dinero en caja")
     public ResponseEntity<MovimientoCajaResponseDTO> registrarSalida(
             @Valid @RequestBody GastoRequestDTO dto,
@@ -37,7 +37,7 @@ public class CajaController {
     }
 
     @PostMapping("/ingreso-extra")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Registrar ingreso extra", description = "Registra un ingreso manual adicional en caja")
     public ResponseEntity<MovimientoCajaResponseDTO> registrarEntradaExtra(
             @Valid @RequestBody GastoRequestDTO dto,
@@ -46,14 +46,14 @@ public class CajaController {
     }
 
     @GetMapping("/resumen-hoy")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Ver caja del día", description = "Lista todos los movimientos registrados en la fecha actual")
     public ResponseEntity<List<MovimientoCajaResponseDTO>> verCajaHoy() {
         return ResponseEntity.ok(cajaService.listarMovimientosHoy());
     }
 
     @GetMapping("/movimientos-rango")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Movimientos por rango", description = "Lista movimientos de caja en un rango de fechas")
     public ResponseEntity<List<MovimientoCajaResponseDTO>> obtenerMovimientosPorRango(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
