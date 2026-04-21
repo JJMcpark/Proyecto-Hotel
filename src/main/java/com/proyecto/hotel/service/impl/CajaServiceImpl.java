@@ -154,8 +154,8 @@ public class CajaServiceImpl implements CajaService {
     @Override
     @Transactional
     public MovimientoCajaResponseDTO actualizarMonto(Long id, BigDecimal monto, com.proyecto.hotel.model.enums.MetodoPago metodoPago) {
-        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new com.proyecto.hotel.handler.BadRequestException("El monto debe ser mayor a 0");
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) < 0) {
+            throw new com.proyecto.hotel.handler.BadRequestException("El monto no puede ser negativo");
         }
         MovimientoCaja movimiento = cajaRepository.findById(id)
                 .orElseThrow(() -> new com.proyecto.hotel.handler.BadRequestException("Movimiento no encontrado: " + id));
