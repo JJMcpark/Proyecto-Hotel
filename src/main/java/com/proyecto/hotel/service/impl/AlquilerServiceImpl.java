@@ -215,6 +215,100 @@ public class AlquilerServiceImpl implements AlquilerService {
         return mapearResponse(alquilerRepository.save(alquiler));
     }
 
+    @Override
+    @Transactional
+    public AlquilerResponseDTO actualizarFechaSalida(Long id, LocalDateTime nuevaFechaSalida) {
+        Alquiler alquiler = alquilerRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Alquiler no encontrado con id: " + id));
+
+        if (alquiler.getEstado() != EstadoAlquiler.ACTIVO && alquiler.getEstado() != EstadoAlquiler.FINALIZADO) {
+            throw new BadRequestException("Solo se pueden modificar alquileres activos o finalizados.");
+        }
+
+        if (alquiler.getFechaIngreso() == null) {
+            throw new BadRequestException("El alquiler no tiene fecha de ingreso registrada.");
+        }
+
+        // VALIDAR: nuevaFechaSalida no sea null (seguridad contra NPE)
+        if (nuevaFechaSalida == null) {
+            throw new BadRequestException("La fecha de salida no puede estar vacía.");
+        }
+
+        // Validar que la nueva fecha de salida no sea anterior a la fecha de ingreso
+        if (nuevaFechaSalida.isBefore(alquiler.getFechaIngreso())) {
+            throw new BadRequestException("La fecha de salida no puede ser anterior a la fecha de ingreso.");
+        }
+
+        // Obtener el tipo de alquiler para determinar la unidad (HORA o DIA)
+        if (alquiler.getTarifa() == null || alquiler.getTarifa().getTipoAlquiler() == null) {
+            throw new BadRequestException("No se puede determinar el tipo de alquiler.");
+        }
+
+        // VALIDAR: precio fijado no sea null
+        if (alquiler.getPrecioFijado() == null) {
+            throw new BadRequestException("El alquiler no tiene precio fijado registrado.");
+        }
+
+        String unidad = alquiler.getTarifa().getTipoAlquiler().getUnidad();
+        int multiplicador = alquiler.getTarifa().getTipoAlquiler().getMultiplicador();
+
+        // VALIDAR: multiplicador debe ser válido (> 0)
+        if (multiplicador <= 0) {
+            throw new BadRequestException("Configuración inválida: el multiplicador de tipo de alquiler debe ser mayor a 0.");
+        }
+
+        // VALIDAR: unidad debe ser reconocida (HORA o DIA)
+        if (unidad == null || (!unidad.equalsIgnoreCase("HORA") && !unidad.equalsIgnoreCase("DIA"))) {
+            throw new BadRequestException("Tipo de alquiler no reconocido: unidad debe ser HORA o DIA, se recibió '" + unidad + "'.");
+        }
+
+        // Calcular cantidad de tiempo usando método reutilizable
+        int nuevosCantTiempo = calcularCantTiempo(unidad, multiplicador, alquiler.getFechaIngreso(), nuevaFechaSalida);
+
+        // Recalcular el subTotal basado en el nuevo cantTiempo
+        BigDecimal precioFijado = alquiler.getPrecioFijado();
+        BigDecimal nuevoSubTotal = precioFijado.multiply(BigDecimal.valueOf(nuevosCantTiempo));
+
+        // Calcular el nuevo pagoPendiente considerando lo ya pagado
+        BigDecimal totalPagado = cajaRepository.sumNetByAlquilerId(alquiler.getId());
+        if (totalPagado == null) {
+            totalPagado = BigDecimal.ZERO;
+        }
+        BigDecimal nuevoPagoPendiente = nuevoSubTotal.subtract(totalPagado);
+        if (nuevoPagoPendiente.compareTo(BigDecimal.ZERO) < 0) {
+            nuevoPagoPendiente = BigDecimal.ZERO;
+        }
+
+        // Actualizar el alquiler
+        alquiler.setFechaSalida(nuevaFechaSalida);
+        alquiler.setCantTiempo(nuevosCantTiempo);
+        alquiler.setFechaPrevista(nuevaFechaSalida);  // IMPORTANTE: mantener consistencia
+        alquiler.setPagoPendiente(nuevoPagoPendiente);
+
+        return mapearResponse(alquilerRepository.save(alquiler));
+    }
+
+    // ────── Helpers ──────
+
+    /**
+     * Calcula la cantidad de tiempo para un alquiler basado en:
+     * - Duración entre fechas (horas o días según unidad)
+     * - Multiplicador del tipo de alquiler
+     * @param unidad "HORA" o "DIA"
+     * @param multiplicador multiplicador del tipo de alquiler (ej: 2 para "cada 2 horas")
+     * @param inicio fecha ingreso
+     * @param fin fecha salida
+     * @return cantidad de tiempo a cobrar (mínimo 1)
+     */
+    private int calcularCantTiempo(String unidad, int multiplicador, LocalDateTime inicio, LocalDateTime fin) {
+        long duracion = unidad.equalsIgnoreCase("HORA")
+            ? java.time.temporal.ChronoUnit.HOURS.between(inicio, fin)
+            : java.time.temporal.ChronoUnit.DAYS.between(inicio, fin);
+        
+        int cant = (int) Math.ceil((double) duracion / multiplicador);
+        return cant <= 0 ? 1 : cant;
+    }
+
     private void registrarMovimientoCaja(BigDecimal monto, MetodoPago metodo, TipoMovimiento tipo, Alquiler alq, Usuario usu, String concepto) {
         MovimientoCaja mov = new MovimientoCaja();
         mov.setTipo(tipo);
@@ -225,6 +319,8 @@ public class AlquilerServiceImpl implements AlquilerService {
         mov.setUsuario(usu);
         cajaRepository.save(mov);
     }
+
+
 
     private Map<Long, BigDecimal> buildSumMap(List<Alquiler> lista) {
         List<Long> ids = lista.stream().map(Alquiler::getId).collect(Collectors.toList());
@@ -261,6 +357,11 @@ public class AlquilerServiceImpl implements AlquilerService {
         ? a.getHuespedes().stream().map(com.proyecto.hotel.model.entities.Cliente::getNombre).collect(Collectors.toList())
         : List.of();
 
+    String tipoAlquilerUnidad = (a.getTarifa() != null && a.getTarifa().getTipoAlquiler() != null)
+        ? a.getTarifa().getTipoAlquiler().getUnidad() : null;
+    Integer tipoAlquilerMultiplicador = (a.getTarifa() != null && a.getTarifa().getTipoAlquiler() != null)
+        ? a.getTarifa().getTipoAlquiler().getMultiplicador() : null;
+
     return new AlquilerResponseDTO(
         a.getId(),
         a.getHabitacion().getNumero(),
@@ -275,7 +376,11 @@ public class AlquilerServiceImpl implements AlquilerService {
         a.getFechaSalida(),
         a.getEstado().name(),
         a.getHabitacion().getEstado().name(),
-        huespedesNombres
+        huespedesNombres,
+        a.getPrecioFijado(),
+        a.getCantTiempo(),
+        tipoAlquilerUnidad,
+        tipoAlquilerMultiplicador
     );
 }
 
@@ -350,17 +455,14 @@ public class AlquilerServiceImpl implements AlquilerService {
     @Transactional
     public int eliminarHistorial(java.time.LocalDate desde, java.time.LocalDate hasta, String adminDni) {
         List<Long> ids;
-        String periodoDesc;
 
         if (desde != null && hasta != null) {
             if (hasta.isBefore(desde)) throw new BadRequestException("La fecha 'hasta' no puede ser anterior a 'desde'");
             LocalDateTime inicio = desde.atStartOfDay();
             LocalDateTime fin = hasta.atTime(java.time.LocalTime.MAX);
             ids = alquilerRepository.findIdsByEstadoAndFechaIngresoBetween(EstadoAlquiler.FINALIZADO, inicio, fin);
-            periodoDesc = desde + " — " + hasta;
         } else {
             ids = alquilerRepository.findIdsByEstado(EstadoAlquiler.FINALIZADO);
-            periodoDesc = "TODO";
         }
 
         if (ids.isEmpty()) return 0;

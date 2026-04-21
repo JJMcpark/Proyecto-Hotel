@@ -17,6 +17,7 @@ public interface AlquilerService {
     List<AlquilerResponseDTO> listarHistorial();
     AlquilerResponseDTO obtenerAlquilerPorId(Long id);
     AlquilerResponseDTO actualizarMontos(Long id, BigDecimal subTotal, BigDecimal pagoPendiente);
+    AlquilerResponseDTO actualizarFechaSalida(Long id, java.time.LocalDateTime fechaSalida);
 
     AlquilerResponseDTO agregarHuesped(Long idAlquiler, Long idCliente);
     AlquilerResponseDTO quitarHuesped(Long idAlquiler, Long idCliente);

@@ -18,5 +18,10 @@ public record AlquilerResponseDTO(
     LocalDateTime fechaSalida,
     String estadoAlquiler,
     String estadoHabitacion,
-    List<String> huespedes
+    List<String> huespedes,
+    // Campos para cálculo de preview de cambio de fecha
+    BigDecimal precioFijado,
+    Integer cantTiempo,
+    String tipoAlquilerUnidad,
+    Integer tipoAlquilerMultiplicador
 ) {}

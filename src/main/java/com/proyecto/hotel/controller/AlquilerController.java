@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.proyecto.hotel.controller.request.ActualizarMontosAlquilerRequestDTO;
+import com.proyecto.hotel.controller.request.ActualizarFechaSalidaAlquilerRequestDTO;
 import com.proyecto.hotel.controller.request.CheckInRequestDTO;
 import com.proyecto.hotel.controller.response.AlquilerResponseDTO;
 import com.proyecto.hotel.model.enums.MetodoPago;
@@ -74,6 +75,15 @@ public class AlquilerController {
             @PathVariable Long id,
             @Valid @RequestBody ActualizarMontosAlquilerRequestDTO dto) {
         return ResponseEntity.ok(alquilerService.actualizarMontos(id, dto.subTotal(), dto.pagoPendiente()));
+    }
+
+    @PatchMapping("/{id}/fechaSalida")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Actualizar fecha de salida", description = "Permite editar la fecha de salida de un alquiler activo o finalizado. Recalcula automáticamente cantTiempo y subtotal. Acción reservada para administrador")
+    public ResponseEntity<AlquilerResponseDTO> actualizarFechaSalida(
+            @PathVariable Long id,
+            @Valid @RequestBody ActualizarFechaSalidaAlquilerRequestDTO dto) {
+        return ResponseEntity.ok(alquilerService.actualizarFechaSalida(id, dto.fechaSalida()));
     }
 
     @PostMapping("/{id}/huespedes/{clienteId}")
