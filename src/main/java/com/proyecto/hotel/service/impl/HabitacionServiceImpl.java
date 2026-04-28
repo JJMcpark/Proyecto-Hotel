@@ -3,10 +3,12 @@ package com.proyecto.hotel.service.impl;
 import com.proyecto.hotel.handler.BadRequestException;
 import com.proyecto.hotel.model.dto.HabitacionDTO;
 import com.proyecto.hotel.model.entities.Habitacion;
+import com.proyecto.hotel.model.entities.TipoHabitacion;
 import com.proyecto.hotel.model.enums.EstadoHabitacion;
 import com.proyecto.hotel.model.mapper.HabitacionMapper;
 import com.proyecto.hotel.model.repository.AlquilerRepository;
 import com.proyecto.hotel.model.repository.HabitacionRepository;
+import com.proyecto.hotel.model.repository.TipoHabitacionRepository;
 import com.proyecto.hotel.service.HabitacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class HabitacionServiceImpl implements HabitacionService {
 
     private final HabitacionRepository habitacionRepository;
     private final AlquilerRepository alquilerRepository;
+    private final TipoHabitacionRepository tipoHabitacionRepository;
     private final HabitacionMapper habitacionMapper;
 
     @Override
@@ -78,6 +81,15 @@ public class HabitacionServiceImpl implements HabitacionService {
     @Transactional
     public HabitacionDTO crearHabitacion(HabitacionDTO habitacionDTO) {
         Habitacion habitacion = habitacionMapper.toEntity(habitacionDTO);
+
+        if (habitacionDTO.getTipoHabitacion() == null || habitacionDTO.getTipoHabitacion().getId() == null) {
+            throw new BadRequestException("El tipo de habitación es obligatorio");
+        }
+
+        TipoHabitacion tipoHabitacion = tipoHabitacionRepository.findById(habitacionDTO.getTipoHabitacion().getId())
+                .orElseThrow(() -> new BadRequestException("Tipo de habitación no encontrado con id: " + habitacionDTO.getTipoHabitacion().getId()));
+
+        habitacion.setTipoHabitacion(tipoHabitacion);
         habitacion = habitacionRepository.save(habitacion);
         return habitacionMapper.toDTO(habitacionRepository.findById(habitacion.getId()).orElseThrow());
     }
@@ -88,6 +100,13 @@ public class HabitacionServiceImpl implements HabitacionService {
         Habitacion habitacion = habitacionRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Habitación no encontrada con id: " + id));
         habitacionMapper.updateEntityFromDTO(habitacionDTO, habitacion);
+
+        if (habitacionDTO.getTipoHabitacion() != null && habitacionDTO.getTipoHabitacion().getId() != null) {
+            TipoHabitacion tipoHabitacion = tipoHabitacionRepository.findById(habitacionDTO.getTipoHabitacion().getId())
+                    .orElseThrow(() -> new BadRequestException("Tipo de habitación no encontrado con id: " + habitacionDTO.getTipoHabitacion().getId()));
+            habitacion.setTipoHabitacion(tipoHabitacion);
+        }
+
         habitacion = habitacionRepository.save(habitacion);
         return habitacionMapper.toDTO(habitacionRepository.findById(habitacion.getId()).orElseThrow());
     }

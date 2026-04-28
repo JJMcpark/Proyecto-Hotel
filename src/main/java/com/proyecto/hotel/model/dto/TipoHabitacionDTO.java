@@ -1,6 +1,5 @@
 package com.proyecto.hotel.model.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -9,7 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TipoHabitacionDTO {
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long id;
     private String nombre;
 }
